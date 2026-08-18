@@ -1,0 +1,4 @@
+"use client";
+import { useRef, type ReactNode } from "react";
+import { X } from "lucide-react";
+export function Dialog({trigger,title,description,children}:{trigger:ReactNode;title:string;description?:string;children:ReactNode}){const ref=useRef<HTMLDialogElement>(null);return <><span onClick={()=>ref.current?.showModal()}>{trigger}</span><dialog ref={ref} className="dialog" onClick={e=>{if(e.target===ref.current)ref.current.close()}}><div className="dialog-panel" onSubmit={()=>ref.current?.close()}><header><div><div className="eyebrow">Confirmación</div><h2>{title}</h2></div><button type="button" className="btn btn-ghost dialog-close" onClick={()=>ref.current?.close()} aria-label="Cerrar"><X size={20}/></button></header>{description&&<p className="muted">{description}</p>}<div className="dialog-actions">{children}</div></div></dialog></>}

@@ -1,0 +1,477 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  ADMIN_FINANCIERO
+  STAFF
+}
+enum ClientType {
+  PARTICULAR
+  EMPRESA
+}
+enum ClientSource {
+  INSTAGRAM
+  FACEBOOK
+  WHATSAPP
+  REFERIDO
+  PARTYEXPRESS
+  WEB
+  OTRO
+}
+enum Currency {
+  ARS
+  USD
+}
+enum DiscountType {
+  NONE
+  PERCENTAGE
+  FIXED
+}
+enum QuoteStatus {
+  CONSULTA
+  PRESUPUESTO_ENVIADO
+  EN_NEGOCIACION
+  ESPERANDO_SENA
+  CONFIRMADO
+  REALIZADO
+  CERRADO
+  CANCELADO
+}
+enum QuoteItemType {
+  SERVICE
+  ADD_ON
+  CUSTOM
+}
+enum EventStatus {
+  CONFIRMADO
+  EN_PREPARACION
+  LISTO
+  EN_CURSO
+  REALIZADO
+  CERRADO
+  CANCELADO
+}
+enum StaffRole {
+  DJ
+  TECNICO
+  DJ_TECNICO
+}
+enum AssignmentType {
+  DJ
+  ARMADO
+  DESARMADO
+  TECNICO
+  DJ_TECNICO
+  OTRO
+}
+enum PaymentType {
+  ADVANCE
+  PARTIAL
+  FINAL
+}
+enum PaymentMethod {
+  TRANSFER
+  CASH
+  OTHER
+}
+enum PaymentStatus {
+  ACTIVE
+  VOID
+}
+enum ExpensePaymentMethod {
+  CASH
+  TRANSFER
+  DEBIT_CARD
+  CREDIT_CARD
+  MERCADO_PAGO
+  OTHER
+}
+enum ExpenseStatus {
+  ACTIVE
+  VOID
+}
+enum FinancialStatus {
+  OPEN
+  READY_TO_CLOSE
+  CLOSED
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  email String @unique
+  passwordHash String
+  role UserRole
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions Session[]
+  quotesCreated Quote[] @relation("QuoteCreator")
+  versionsCreated QuoteVersion[] @relation("VersionCreator")
+  auditLogs AuditLog[]
+  staff Staff?
+  staffAssignmentsCreated EventStaff[] @relation("AssignmentCreator")
+  staffPaymentsCreated StaffPayment[] @relation("PaymentCreator")
+  staffPaymentsVoided StaffPayment[] @relation("PaymentVoider")
+  eventExpensesCreated EventExpense[] @relation("ExpenseCreator")
+  eventExpensesVoided EventExpense[] @relation("ExpenseVoider")
+  financialEventsClosed Event[] @relation("FinancialCloser")
+}
+
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique
+  userId String @db.Uuid
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Client {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  type ClientType
+  phone String?
+  email String?
+  locality String?
+  address String?
+  googleMapsUrl String?
+  source ClientSource?
+  sourceOther String?
+  notes String?
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  contacts ClientContact[]
+  quotes Quote[]
+  events Event[]
+  @@index([name])
+}
+
+model ClientContact {
+  id String @id @default(uuid()) @db.Uuid
+  clientId String @db.Uuid
+  name String
+  phone String?
+  email String?
+  position String?
+  isPrimary Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@index([clientId])
+}
+
+model EventType {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quotes Quote[]
+  events Event[]
+}
+
+model Service {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  category String
+  description String?
+  listPrice Decimal @db.Decimal(18,2)
+  currency Currency
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items QuoteItem[]
+  @@index([active, name])
+}
+
+model AddOn {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  category String
+  description String?
+  listPrice Decimal @db.Decimal(18,2)
+  currency Currency
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items QuoteItem[]
+  @@index([active, name])
+}
+
+model TaxRate {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  rate Decimal @db.Decimal(7,4)
+  active Boolean @default(true)
+  validFrom DateTime? @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Quote {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  clientId String @db.Uuid
+  eventTypeId String @db.Uuid
+  eventDate DateTime @db.Date
+  guestCount Int?
+  venue String
+  address String?
+  locality String?
+  googleMapsUrl String?
+  startTime String @db.VarChar(5)
+  endTime String @db.VarChar(5)
+  status QuoteStatus @default(CONSULTA)
+  notes String?
+  createdById String @db.Uuid
+  confirmedVersionId String? @unique @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client Client @relation(fields: [clientId], references: [id])
+  eventType EventType @relation(fields: [eventTypeId], references: [id])
+  createdBy User @relation("QuoteCreator", fields: [createdById], references: [id])
+  versions QuoteVersion[] @relation("QuoteVersions")
+  confirmedVersion QuoteVersion? @relation("ConfirmedVersion", fields: [confirmedVersionId], references: [id])
+  event Event?
+  @@index([eventDate])
+  @@index([status])
+}
+
+model QuoteVersion {
+  id String @id @default(uuid()) @db.Uuid
+  quoteId String @db.Uuid
+  versionNumber Int
+  currency Currency
+  grossSubtotal Decimal @db.Decimal(18,2)
+  itemDiscountTotal Decimal @db.Decimal(18,2)
+  subtotalAfterItemDiscounts Decimal @db.Decimal(18,2)
+  generalDiscountType DiscountType @default(NONE)
+  generalDiscountValue Decimal @db.Decimal(18,2)
+  generalDiscountAmount Decimal @db.Decimal(18,2)
+  taxableBase Decimal @db.Decimal(18,2)
+  taxName String?
+  taxRate Decimal @db.Decimal(7,4)
+  taxAmount Decimal @db.Decimal(18,2)
+  totalFinal Decimal @db.Decimal(18,2)
+  depositPercentage Decimal @db.Decimal(7,4)
+  depositAmount Decimal @db.Decimal(18,2)
+  balance Decimal @db.Decimal(18,2)
+  notes String?
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  quote Quote @relation("QuoteVersions", fields: [quoteId], references: [id], onDelete: Restrict)
+  confirmedForQuote Quote? @relation("ConfirmedVersion")
+  createdBy User @relation("VersionCreator", fields: [createdById], references: [id])
+  items QuoteItem[]
+  sourceEvent Event? @relation("SourceVersion")
+  @@unique([quoteId, versionNumber])
+  @@index([quoteId, createdAt])
+}
+
+model QuoteItem {
+  id String @id @default(uuid()) @db.Uuid
+  quoteVersionId String @db.Uuid
+  type QuoteItemType
+  serviceId String? @db.Uuid
+  addOnId String? @db.Uuid
+  description String
+  quantity Decimal @db.Decimal(12,2)
+  currency Currency
+  listUnitPrice Decimal @db.Decimal(18,2)
+  discountType DiscountType @default(NONE)
+  discountValue Decimal @db.Decimal(18,2)
+  grossAmount Decimal @db.Decimal(18,2)
+  discountAmount Decimal @db.Decimal(18,2)
+  finalAmount Decimal @db.Decimal(18,2)
+  sortOrder Int @default(0)
+  quoteVersion QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  addOn AddOn? @relation(fields: [addOnId], references: [id], onDelete: SetNull)
+  eventExpenses EventExpense[]
+  @@index([quoteVersionId, sortOrder])
+}
+
+model Event {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique
+  clientId String @db.Uuid
+  eventTypeId String @db.Uuid
+  sourceQuoteId String @unique @db.Uuid
+  sourceQuoteVersionId String @unique @db.Uuid
+  eventDate DateTime @db.Date
+  startTime String @db.VarChar(5)
+  endTime String @db.VarChar(5)
+  setupTime String? @db.VarChar(5)
+  guestCount Int?
+  venue String
+  address String?
+  locality String?
+  googleMapsUrl String?
+  status EventStatus @default(CONFIRMADO)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  managerStaffId String? @db.Uuid
+  financialStatus FinancialStatus @default(OPEN)
+  financialClosedAt DateTime?
+  financialClosedById String? @db.Uuid
+  client Client @relation(fields: [clientId], references: [id])
+  eventType EventType @relation(fields: [eventTypeId], references: [id])
+  sourceQuote Quote @relation(fields: [sourceQuoteId], references: [id], onDelete: Restrict)
+  sourceQuoteVersion QuoteVersion @relation("SourceVersion", fields: [sourceQuoteVersionId], references: [id], onDelete: Restrict)
+  managerStaff Staff? @relation("EventManager", fields: [managerStaffId], references: [id], onDelete: SetNull)
+  financialClosedBy User? @relation("FinancialCloser", fields: [financialClosedById], references: [id], onDelete: SetNull)
+  staffAssignments EventStaff[]
+  staffPayments StaffPayment[]
+  expenses EventExpense[]
+  @@index([eventDate])
+  @@index([managerStaffId])
+  @@index([financialStatus, eventDate])
+}
+
+model Staff {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  phone String?
+  email String?
+  defaultRole StaffRole
+  defaultEventRate Decimal @default(0) @db.Decimal(18,2)
+  currency Currency @default(ARS)
+  active Boolean @default(true)
+  userId String? @unique @db.Uuid
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  managedEvents Event[] @relation("EventManager")
+  eventAssignments EventStaff[]
+  payments StaffPayment[]
+  expensesPaid EventExpense[]
+  @@index([active, name])
+}
+
+model EventStaff {
+  id String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  staffId String @db.Uuid
+  assignmentType AssignmentType
+  agreedAmount Decimal @db.Decimal(18,2)
+  currency Currency
+  notes String?
+  createdById String @db.Uuid
+  active Boolean @default(true)
+  voidedAt DateTime?
+  voidReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  createdBy User @relation("AssignmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  @@unique([eventId, staffId, assignmentType])
+  @@index([staffId, active])
+  @@index([eventId, active])
+}
+
+model StaffPayment {
+  id String @id @default(uuid()) @db.Uuid
+  staffId String @db.Uuid
+  eventId String? @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  paymentDate DateTime @db.Date
+  paymentMethod PaymentMethod
+  paymentType PaymentType
+  status PaymentStatus @default(ACTIVE)
+  notes String?
+  createdById String @db.Uuid
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  createdAt DateTime @default(now())
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdBy User @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("PaymentVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([staffId, paymentDate])
+  @@index([eventId])
+  @@index([status, currency])
+}
+
+model ExpenseCategory {
+  id String @id @default(uuid()) @db.Uuid
+  name String @unique
+  slug String @unique
+  active Boolean @default(true)
+  sortOrder Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expenses EventExpense[]
+  @@index([active, sortOrder])
+}
+
+model EventExpense {
+  id String @id @default(uuid()) @db.Uuid
+  eventId String @db.Uuid
+  categoryId String @db.Uuid
+  quoteItemId String? @db.Uuid
+  description String
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  expenseDate DateTime @db.Date
+  paidByStaffId String? @db.Uuid
+  paymentMethod ExpensePaymentMethod?
+  receiptUrl String?
+  notes String?
+  status ExpenseStatus @default(ACTIVE)
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  quoteItem QuoteItem? @relation(fields: [quoteItemId], references: [id], onDelete: SetNull)
+  paidByStaff Staff? @relation(fields: [paidByStaffId], references: [id], onDelete: SetNull)
+  createdBy User @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("ExpenseVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([eventId, status, currency])
+  @@index([categoryId, expenseDate])
+  @@index([paidByStaffId])
+  @@index([quoteItemId])
+}
+
+model NumberSequence {
+  entity String
+  year Int
+  value Int @default(0)
+  @@id([entity, year])
+}
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  userId String? @db.Uuid
+  action String
+  entity String
+  entityId String
+  previousValue Json?
+  newValue Json?
+  operationId String @db.Uuid
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

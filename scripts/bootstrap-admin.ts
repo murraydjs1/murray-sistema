@@ -1,0 +1,10 @@
+import { PrismaClient, UserRole } from "@prisma/client";
+import argon2 from "argon2";
+const db = new PrismaClient();
+const [email, password, name = "Miguel"] = process.argv.slice(2);
+if (!email || !password) throw new Error("Uso: pnpm bootstrap:admin email contraseña [nombre]");
+if ((await db.user.count()) > 0) throw new Error("El bootstrap solo funciona cuando no existe ningún usuario");
+if (password.length < 12) throw new Error("La contraseña debe tener al menos 12 caracteres");
+await db.user.create({ data: { email: email.toLowerCase(), name, passwordHash: await argon2.hash(password, { type: argon2.argon2id }), role: UserRole.ADMIN } });
+console.log(`ADMIN creado: ${email}`);
+await db.$disconnect();

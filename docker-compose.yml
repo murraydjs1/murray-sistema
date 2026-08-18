@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: murray
+      POSTGRES_PASSWORD: ${LOCAL_POSTGRES_PASSWORD:?Definir LOCAL_POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: murray_djs
+    ports:
+      - "5432:5432"
+    volumes:
+      - murray_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U murray -d murray_djs"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  murray_postgres:

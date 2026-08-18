@@ -1,0 +1,1 @@
+export function monthRange(value:string|undefined){const match=/^(\d{4})-(\d{2})$/.exec(value||"");const now=new Date(),year=match?Number(match[1]):now.getFullYear(),month=match?Number(match[2]):now.getMonth()+1;return{value:`${year}-${String(month).padStart(2,"0")}`,year,month,start:new Date(Date.UTC(year,month-1,1)),end:new Date(Date.UTC(year,month,0))};}

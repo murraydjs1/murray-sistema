@@ -1,0 +1,10 @@
+node_modules
+.pnpm-store
+.dev-postgres
+.next
+.env
+*.tsbuildinfo
+playwright-report
+test-results
+coverage
+*.log

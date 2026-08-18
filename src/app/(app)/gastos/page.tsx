@@ -1,0 +1,12 @@
+import Link from "next/link";
+import { prisma } from "@/server/db/prisma";
+import { requireManagement } from "@/server/auth/authorization";
+import { formatMoney } from "@/lib/money/format";
+import { createExpenseCategory, updateExpenseCategory } from "@/app/actions/expenses";
+import { EmptyState, PageHeader } from "@/components/ui";
+
+export default async function ExpensesPage(){await requireManagement();const [categories,expenses]=await Promise.all([prisma.expenseCategory.findMany({orderBy:[{sortOrder:"asc"},{name:"asc"}]}),prisma.eventExpense.findMany({take:30,orderBy:{createdAt:"desc"},include:{event:true,category:true,paidByStaff:true}})]);return <>
+ <PageHeader eyebrow="Finanzas" title="Gastos" description="Categorías configurables y últimos gastos directos."/>
+ <section className="grid grid-2"><div className="card"><h2>Nueva categoría</h2><form action={createExpenseCategory} className="form"><div className="field"><label>Nombre</label><input name="name" required/></div><div className="field"><label>Slug</label><input name="slug" placeholder="ej. mantenimiento" required/></div><div className="field"><label>Orden</label><input name="sortOrder" type="number" defaultValue="100"/></div><button className="btn btn-primary">Crear categoría</button></form></div><div className="card"><h2>Categorías</h2><div className="category-list">{categories.map(c=><form key={c.id} action={updateExpenseCategory.bind(null,c.id)} className="category-row"><input name="name" defaultValue={c.name} aria-label={`Nombre ${c.name}`}/><input name="sortOrder" type="number" defaultValue={c.sortOrder} aria-label={`Orden ${c.name}`}/><select name="active" defaultValue={String(c.active)} aria-label={`Estado ${c.name}`}><option value="true">Activa</option><option value="false">Inactiva</option></select><button className="btn btn-secondary">Guardar</button></form>)}</div></div></section>
+ <div className="section-head"><h2>Últimos gastos</h2></div><section className="expense-list">{expenses.map(x=><Link href={`/eventos/${x.eventId}`} className={`card expense-card card-interactive ${x.status==="VOID"?"expense-void":""}`} key={x.id}><div><span className="badge">{x.category.name}</span><h3>{x.description}</h3><p className="muted">{x.event.number} · Pagó {x.paidByStaff?.name||"sin informar"}</p></div><strong>{formatMoney(String(x.amount),x.currency)}</strong></Link>)}{!expenses.length&&<EmptyState title="Todavía no hay gastos" description="Cargalos desde la ficha de cada evento."/>}</section>
+ </>}

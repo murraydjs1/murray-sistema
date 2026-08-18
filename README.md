@@ -35,10 +35,11 @@ pnpm db:local
 En otra terminal:
 
 ```bash
-export DATABASE_URL='postgresql://murray:murray_dev_only@127.0.0.1:5432/murray_djs?schema=public'
+export LOCAL_POSTGRES_PASSWORD='<contraseña-postgres-local>'
+export DATABASE_URL='postgresql://murray:<contraseña-postgres-local>@127.0.0.1:5432/murray_djs?schema=public'
 export AUTH_SECRET='reemplazar-por-un-secreto-local-de-32-caracteres'
 pnpm prisma migrate deploy
-SEED_DEMO_USERS=true SEED_DEMO_PASSWORD='MurraySprint1-DEV!' pnpm db:seed
+SEED_DEMO_USERS=true SEED_DEMO_PASSWORD='<contraseña-demo-local>' pnpm db:seed
 pnpm dev --hostname 127.0.0.1
 ```
 
@@ -47,10 +48,10 @@ Los datos se conservan en `.dev-postgres/data`, excluido de Git.
 Para cargar los seis usuarios demo en una base exclusivamente local:
 
 ```bash
-SEED_DEMO_USERS=true SEED_DEMO_PASSWORD='MurraySprint1-DEV!' pnpm db:seed
+SEED_DEMO_USERS=true SEED_DEMO_PASSWORD='<contraseña-demo-local>' pnpm db:seed
 ```
 
-`MurraySprint1-DEV!` está claramente reservado para desarrollo. Nunca habilitar usuarios demo ni reutilizar esa contraseña en producción.
+Definí una contraseña exclusiva para desarrollo. Nunca habilites usuarios demo ni reutilices esa contraseña en producción.
 
 ## Verificación
 
