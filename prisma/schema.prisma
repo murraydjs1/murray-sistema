@@ -152,6 +152,11 @@ enum GeneralExpenseType {
   OPERATING
   INVESTMENT
 }
+
+enum EventSource {
+  SYSTEM
+  EXCEL_IMPORT
+}
 enum FinancialStatus {
   OPEN
   READY_TO_CLOSE
@@ -195,6 +200,7 @@ model User {
   contributionsCreated OwnerContribution[] @relation("ContributionCreator")
   contributionsVoided OwnerContribution[] @relation("ContributionVoider")
   financialSettingsUpdated FinancialSetting[]
+  excelImports ExcelImportRecord[]
 }
 
 model Session {
@@ -383,8 +389,9 @@ model Event {
   number String @unique
   clientId String @db.Uuid
   eventTypeId String @db.Uuid
-  sourceQuoteId String @unique @db.Uuid
-  sourceQuoteVersionId String @unique @db.Uuid
+  source EventSource @default(SYSTEM)
+  sourceQuoteId String? @unique @db.Uuid
+  sourceQuoteVersionId String? @unique @db.Uuid
   eventDate DateTime @db.Date
   startTime String @db.VarChar(5)
   endTime String @db.VarChar(5)
@@ -404,8 +411,10 @@ model Event {
   financialClosedById String? @db.Uuid
   client Client @relation(fields: [clientId], references: [id])
   eventType EventType @relation(fields: [eventTypeId], references: [id])
-  sourceQuote Quote @relation(fields: [sourceQuoteId], references: [id], onDelete: Restrict)
-  sourceQuoteVersion QuoteVersion @relation("SourceVersion", fields: [sourceQuoteVersionId], references: [id], onDelete: Restrict)
+  sourceQuote Quote? @relation(fields: [sourceQuoteId], references: [id], onDelete: Restrict)
+  sourceQuoteVersion QuoteVersion? @relation("SourceVersion", fields: [sourceQuoteVersionId], references: [id], onDelete: Restrict)
+  legacyFinancialData EventLegacyFinancialData?
+  excelImportRecord ExcelImportRecord?
   managerStaff Staff? @relation("EventManager", fields: [managerStaffId], references: [id], onDelete: SetNull)
   financialClosedBy User? @relation("FinancialCloser", fields: [financialClosedById], references: [id], onDelete: SetNull)
   staffAssignments EventStaff[]
@@ -415,6 +424,40 @@ model Event {
   @@index([eventDate])
   @@index([managerStaffId])
   @@index([financialStatus, eventDate])
+}
+
+model EventLegacyFinancialData {
+  id String @id @default(uuid()) @db.Uuid
+  eventId String @unique @db.Uuid
+  saleArs Decimal? @db.Decimal(18,2)
+  saleUsd Decimal? @db.Decimal(18,2)
+  depositArs Decimal? @db.Decimal(18,2)
+  depositUsd Decimal? @db.Decimal(18,2)
+  costArs Decimal? @db.Decimal(18,2)
+  costUsd Decimal? @db.Decimal(18,2)
+  resultArs Decimal? @db.Decimal(18,2)
+  resultUsd Decimal? @db.Decimal(18,2)
+  priceFormula String?
+  notes String?
+  sourceSheet String
+  sourceRow Int
+  createdAt DateTime @default(now())
+  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  @@index([sourceSheet, sourceRow])
+}
+
+model ExcelImportRecord {
+  id String @id @default(uuid()) @db.Uuid
+  fileHash String
+  sheetName String
+  rowNumber Int
+  eventId String @unique @db.Uuid
+  importedById String @db.Uuid
+  importedAt DateTime @default(now())
+  event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  importedBy User @relation(fields: [importedById], references: [id], onDelete: Restrict)
+  @@unique([fileHash, sheetName, rowNumber])
+  @@index([fileHash, sheetName])
 }
 
 model Staff {
