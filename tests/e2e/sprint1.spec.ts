@@ -11,7 +11,7 @@ test.afterAll(async()=>db.$disconnect());
 test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   await login(page,"miguel@murraydjs.local");
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading",{name:"Todo bajo control"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Resumen del período"})).toBeVisible();
 
   await page.goto("/clientes/nuevo");
   await page.getByLabel("Nombre / razón social *").fill("Cliente Prueba Murray");
@@ -75,7 +75,7 @@ test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   expect(await db.event.count({where:{sourceQuoteId:quoteId}})).toBe(1);
   await page.goto(`/presupuestos/${quoteId}`);await expect(page.getByRole("button",{name:/Confirmar esta versión/})).toHaveCount(0);expect(await db.event.count({where:{sourceQuoteId:quoteId}})).toBe(1);
   await page.goto("/agenda?month=2026-12");await expect(page.getByText("Cliente Prueba Murray",{exact:false}).first()).toBeVisible();
-  await page.goto("/dashboard?from=2026-12-01&to=2026-12-31");await expect(page.getByRole("cell",{name:"Cliente Prueba Murray"}).first()).toBeVisible();
+  await page.goto("/dashboard?from=2026-12-01&to=2026-12-31");await expect(page.locator(".dashboard-card").filter({hasText:"Eventos del período"})).toContainText("1");
 
   await page.goto("/clientes/nuevo");await page.getByLabel("Nombre / razón social *").fill("Empresa Prueba Murray");await page.getByLabel("Tipo").selectOption("EMPRESA");await page.getByRole("button",{name:"Guardar cliente"}).click();await expect(page).toHaveURL(/clientes\/[0-9a-f-]+$/);
   await page.goto("/presupuestos/nuevo");await page.locator('[name="clientId"]').selectOption({label:"Empresa Prueba Murray"});await page.locator('[name="eventTypeId"]').selectOption({label:"Corporativo"});await page.locator('[name="eventDate"]').fill("2027-01-15");await page.locator('[name="startTime"]').fill("20:00");await page.locator('[name="endTime"]').fill("01:00");await page.locator('[name="venue"]').fill("Centro Corporativo");await page.getByRole("button",{name:"Crear y agregar servicios"}).click();
@@ -93,7 +93,7 @@ test("flujo integrado, edición y filtros",async({page})=>{
   const suffix=Date.now(); const clientName=`Cliente Integrado ${suffix}`;
   await login(page,"miguel@murraydjs.local");
   await page.goto("/presupuestos/nuevo");
-  await page.getByLabel("Nuevo cliente").check();
+  await page.getByRole("radio",{name:"Nuevo cliente"}).check();
   await page.getByLabel("Nombre / razón social *").fill(clientName);
   await page.getByLabel("Tipo *").selectOption("PARTICULAR");
   await page.getByLabel("Tipo de evento *").selectOption({label:"Cumpleaños"});
@@ -109,7 +109,7 @@ test("flujo integrado, edición y filtros",async({page})=>{
   await page.getByRole("button",{name:"Guardar datos"}).click();
   await expect(page.getByText("Salón Integrado Editado")).toBeVisible();
 
-  await page.goto("/dashboard"); await page.getByLabel("Desde").fill("2027-03-01"); await page.getByLabel("Hasta").fill("2027-03-31");
+  await page.goto("/dashboard"); await page.getByText("Filtrar período").click(); await page.getByLabel("Desde").fill("2027-03-01"); await page.getByLabel("Hasta").fill("2027-03-31");
   await page.getByLabel("Cliente").selectOption({label:clientName}); await page.getByRole("button",{name:"Aplicar filtros"}).click();
   await expect(page.getByLabel("Cliente").locator("option:checked")).toHaveText(clientName);
 
