@@ -49,7 +49,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   const currencies = selectedCurrency ? [selectedCurrency] : Object.values(Currency);
   return <>
-    <div className="topbar"><div><div className="eyebrow">Dashboard</div><h1>Resumen del período</h1></div><Link className="btn btn-accent" href="/presupuestos/nuevo">+ Presupuesto</Link></div>
+    <div className="topbar"><div><div className="eyebrow">Dashboard</div><h1>Resumen del período</h1></div><Link className="btn btn-accent" href="/eventos/nuevo">+ Evento</Link></div>
     <details className="card filters"><summary>Filtrar período</summary><form method="get" className="filter-grid">
       <div className="field"><label htmlFor="filter-from">Desde</label><input id="filter-from" name="from" type="date" defaultValue={from} /></div><div className="field"><label htmlFor="filter-to">Hasta</label><input id="filter-to" name="to" type="date" defaultValue={to} /></div>
       <div className="field"><label htmlFor="filter-type">Tipo de evento</label><select id="filter-type" name="eventTypeId" defaultValue={filters.eventTypeId || ""}><option value="">Todos</option>{eventTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></div>

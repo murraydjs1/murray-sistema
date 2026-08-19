@@ -14,7 +14,7 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:3100", trace: "retain-on-failure", screenshot: "only-on-failure" },
   webServer: { command: "pnpm e2e:prepare && pnpm exec next dev -p 3100 -H 127.0.0.1", url: "http://127.0.0.1:3100/login", reuseExistingServer: false, env: { DATABASE_URL: e2eDatabaseUrl, AUTH_SECRET: e2eAuthSecret, SEED_DEMO_USERS: "true", SEED_DEMO_PASSWORD: e2ePassword } },
   projects: [
-    { name: "desktop-chromium", testMatch: /sprint[123]\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop-chromium", testMatch: /(sprint[123]|events-first)\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
     { name: "mobile-chromium", testMatch: /mobile\.spec\.ts/, dependencies:["desktop-chromium"], use: { ...devices["iPhone 13"], browserName: "chromium" } },
   ],
 });
