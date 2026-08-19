@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/server/db/prisma";
 import { requireManagement } from "@/server/auth/authorization";
 import { audit } from "@/server/audit/audit";
+import { createLedgerMovement, voidLedgerMovement } from "@/server/treasury/ledger";
 
 function text(formData: FormData, key: string) { return String(formData.get(key) ?? "").trim(); }
 function nullable(formData: FormData, key: string) { return text(formData, key) || null; }
@@ -32,11 +33,16 @@ export async function createExpense(eventId:string, formData:FormData) {
   await prisma.$transaction(async tx=>{
     const event=await assertOpen(tx,eventId);
     await tx.expenseCategory.findFirstOrThrow({where:{id:categoryId,active:true}});
-    const paidByStaffId=nullable(formData,"paidByStaffId"), quoteItemId=nullable(formData,"quoteItemId");
+    const paidByStaffId=nullable(formData,"paidByStaffId"), accountId=nullable(formData,"accountId"), quoteItemId=nullable(formData,"quoteItemId"),key=nullable(formData,"idempotencyKey")||randomUUID();
+    if(paidByStaffId&&accountId)throw new Error("Elegí cuenta Murray o personal, no ambos");
     if(paidByStaffId) await tx.staff.findFirstOrThrow({where:{id:paidByStaffId,active:true}});
     if(quoteItemId) await tx.quoteItem.findFirstOrThrow({where:{id:quoteItemId,quoteVersionId:event.sourceQuoteVersionId}});
-    const created=await tx.eventExpense.create({data:{eventId,categoryId,quoteItemId,description,amount:amount.toDecimalPlaces(2).toFixed(2),currency,expenseDate,paidByStaffId,paymentMethod,receiptUrl:nullable(formData,"receiptUrl"),notes:nullable(formData,"notes"),createdById:actor.id}});
-    await audit(tx,{userId:actor.id,action:"CREATE",entity:"EventExpense",entityId:created.id,newValue:expenseSnapshot(created),operationId:randomUUID()});
+    if(await tx.eventExpense.findUnique({where:{idempotencyKey:key}}))return;
+    const expenseId=randomUUID();let treasuryTransactionId:string|null=null;
+    if(accountId){const movement=await createLedgerMovement(tx,{accountId,direction:"OUTFLOW",category:"EVENT_EXPENSE",amount,currency,date:expenseDate,description:`Gasto de evento · ${description}`,referenceType:"EventExpense",referenceId:expenseId,createdById:actor.id});treasuryTransactionId=movement.id;}
+    const created=await tx.eventExpense.create({data:{id:expenseId,eventId,categoryId,quoteItemId,description,amount:amount.toDecimalPlaces(2).toFixed(2),currency,expenseDate,paidByStaffId,accountId,treasuryTransactionId,idempotencyKey:key,paymentMethod,receiptUrl:nullable(formData,"receiptUrl"),notes:nullable(formData,"notes"),createdById:actor.id}});
+    if(paidByStaffId){const reimbursement=await tx.staffReimbursement.create({data:{staffId:paidByStaffId,eventExpenseId:created.id,amount:created.amount,currency,notes:`Reintegro pendiente · ${description}`,idempotencyKey:randomUUID(),createdById:actor.id}});await audit(tx,{userId:actor.id,action:"CREATE",entity:"StaffReimbursement",entityId:reimbursement.id,newValue:{eventExpenseId:created.id,staffId:paidByStaffId,amount:String(created.amount),currency},operationId:key});}
+    await audit(tx,{userId:actor.id,action:"CREATE",entity:"EventExpense",entityId:created.id,newValue:{...expenseSnapshot(created),accountId,createsReimbursement:Boolean(paidByStaffId)},operationId:key});
   }); refresh(eventId);
 }
 
@@ -47,13 +53,15 @@ export async function updateExpense(id:string, formData:FormData) {
   const paymentRaw=nullable(formData,"paymentMethod"), paymentMethod=paymentRaw as ExpensePaymentMethod|null;
   if(!categoryId||!description||!amount.gt(0)||!Object.values(Currency).includes(currency)||Number.isNaN(expenseDate.getTime())||(paymentMethod&&!Object.values(ExpensePaymentMethod).includes(paymentMethod))) throw new Error("Gasto inválido");
   await prisma.$transaction(async tx=>{
-    const old=await tx.eventExpense.findUniqueOrThrow({where:{id}}); eventId=old.eventId;
+    const old=await tx.eventExpense.findUniqueOrThrow({where:{id},include:{reimbursement:true}}); eventId=old.eventId;
     if(old.status==="VOID") throw new Error("Un gasto anulado no puede editarse.");
     const event=await assertOpen(tx,eventId), paidByStaffId=nullable(formData,"paidByStaffId"), quoteItemId=nullable(formData,"quoteItemId");
     await tx.expenseCategory.findUniqueOrThrow({where:{id:categoryId}});
     if(paidByStaffId) await tx.staff.findFirstOrThrow({where:{id:paidByStaffId,active:true}});
     if(quoteItemId) await tx.quoteItem.findFirstOrThrow({where:{id:quoteItemId,quoteVersionId:event.sourceQuoteVersionId}});
+    if(old.treasuryTransactionId&&(old.amount.toString()!==amount.toDecimalPlaces(2).toString()||old.currency!==currency||old.paidByStaffId!==paidByStaffId))throw new Error("Anulá y recreá el gasto para cambiar importe, moneda o pagador con efecto de tesorería.");
     const next=await tx.eventExpense.update({where:{id},data:{categoryId,quoteItemId,description,amount:amount.toDecimalPlaces(2).toFixed(2),currency,expenseDate,paidByStaffId,paymentMethod,receiptUrl:nullable(formData,"receiptUrl"),notes:nullable(formData,"notes")}});
+    if(old.reimbursement){if(old.reimbursement.status!=="PENDING"&&(old.amount.toString()!==amount.toDecimalPlaces(2).toString()||old.currency!==currency||old.paidByStaffId!==paidByStaffId))throw new Error("No se puede modificar un gasto cuyo reintegro ya fue procesado");if(paidByStaffId)await tx.staffReimbursement.update({where:{id:old.reimbursement.id},data:{staffId:paidByStaffId,amount:amount.toFixed(2),currency,notes:`Reintegro pendiente · ${description}`}});else await tx.staffReimbursement.update({where:{id:old.reimbursement.id},data:{status:"VOID",voidedAt:new Date(),voidedById:actor.id,voidReason:"El gasto dejó de estar pagado por staff"}});}else if(paidByStaffId){await tx.staffReimbursement.create({data:{staffId:paidByStaffId,eventExpenseId:id,amount:amount.toFixed(2),currency,notes:`Reintegro pendiente · ${description}`,idempotencyKey:randomUUID(),createdById:actor.id}});}
     await audit(tx,{userId:actor.id,action:"UPDATE",entity:"EventExpense",entityId:id,previousValue:expenseSnapshot(old),newValue:expenseSnapshot(next),operationId:randomUUID()});
   }); refresh(eventId);
 }
@@ -61,7 +69,7 @@ export async function updateExpense(id:string, formData:FormData) {
 export async function voidExpense(id:string, formData:FormData) {
   const actor=await requireManagement(); const reason=text(formData,"voidReason"); let eventId="";
   if(!reason) throw new Error("Indicá el motivo de anulación.");
-  await prisma.$transaction(async tx=>{const old=await tx.eventExpense.findUniqueOrThrow({where:{id}}); eventId=old.eventId; await assertOpen(tx,eventId); if(old.status==="VOID")return; const next=await tx.eventExpense.update({where:{id},data:{status:"VOID",voidedAt:new Date(),voidedById:actor.id,voidReason:reason}}); await audit(tx,{userId:actor.id,action:"VOID",entity:"EventExpense",entityId:id,previousValue:expenseSnapshot(old),newValue:expenseSnapshot(next),operationId:randomUUID()});}); refresh(eventId);
+  await prisma.$transaction(async tx=>{const old=await tx.eventExpense.findUniqueOrThrow({where:{id},include:{reimbursement:true}}); eventId=old.eventId; await assertOpen(tx,eventId); if(old.status==="VOID")return; const operationId=randomUUID(),next=await tx.eventExpense.update({where:{id},data:{status:"VOID",voidedAt:new Date(),voidedById:actor.id,voidReason:reason}});if(old.treasuryTransactionId)await voidLedgerMovement(tx,old.treasuryTransactionId,actor.id,reason);if(old.reimbursement&&old.reimbursement.status==="PENDING"){await tx.staffReimbursement.update({where:{id:old.reimbursement.id},data:{status:"VOID",voidedAt:new Date(),voidedById:actor.id,voidReason:reason}});await audit(tx,{userId:actor.id,action:"VOID",entity:"StaffReimbursement",entityId:old.reimbursement.id,previousValue:{status:"PENDING"},newValue:{status:"VOID",reason},operationId});}await audit(tx,{userId:actor.id,action:"VOID",entity:"EventExpense",entityId:id,previousValue:expenseSnapshot(old),newValue:expenseSnapshot(next),operationId});}); refresh(eventId);revalidatePath("/tesoreria");
 }
 
 export async function closeEventFinances(eventId:string) {

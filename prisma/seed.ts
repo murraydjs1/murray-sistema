@@ -9,8 +9,9 @@ async function main() {
     ["Cinta aisladora", "cinta-aisladora"], ["Precintos", "precintos"], ["Otros", "otros"],
   ] as const;
   for (const [index, [name, slug]] of expenseCategories.entries()) {
-    await db.expenseCategory.upsert({ where: { slug }, update: { name, active: true, sortOrder: index }, create: { name, slug, sortOrder: index } });
+    await db.expenseCategory.upsert({ where: { slug }, update: { name, active: true, sortOrder: index,scope:slug==="otros"?"BOTH":"EVENT" }, create: { name, slug, sortOrder: index,scope:slug==="otros"?"BOTH":"EVENT" } });
   }
+  for (const [index,[name,slug]] of [["Software","software"],["Contador","contador"],["Administración","administracion"]].entries()) await db.expenseCategory.upsert({where:{slug},update:{name,active:true,scope:"GENERAL",sortOrder:100+index},create:{name,slug,scope:"GENERAL",sortOrder:100+index}});
   for (const name of ["Cumpleaños 40", "Cumpleaños 50", "Cumpleaños 60", "Cumpleaños", "Casamiento", "Corporativo", "Otro"]) {
     await db.eventType.upsert({ where: { name }, update: {}, create: { name } });
   }
@@ -37,5 +38,7 @@ async function main() {
     if(existing)await db.staff.update({where:{id:existing.id},data:{name,defaultRole,userId:user?.id||null,active:true}});
     else await db.staff.create({data:{name,defaultRole,defaultEventRate:0,currency:Currency.ARS,userId:user?.id||null}});
   }
+  for(const account of [{name:"Mercado Pago Miguel",type:"MERCADO_PAGO" as const,includeInAvailableCash:true},{name:"Banco Galicia Miguel",type:"BANK" as const,includeInAvailableCash:true},{name:"Efectivo Murray DJs",type:"CASH" as const,includeInAvailableCash:true},{name:"Party Express — Fondos por rendir",type:"THIRD_PARTY" as const,includeInAvailableCash:false}])await db.financialAccount.upsert({where:{name_currency:{name:account.name,currency:Currency.ARS}},update:{...account,active:true},create:{...account,currency:Currency.ARS}});
+  const admin=await db.user.findFirst({where:{role:UserRole.ADMIN},orderBy:{createdAt:"asc"}});if(admin)for(const currency of [Currency.ARS,Currency.USD])await db.financialSetting.upsert({where:{currency},update:{updatedById:admin.id},create:{currency,minimumCashReserve:0,updatedById:admin.id}});
 }
 main().finally(() => db.$disconnect());

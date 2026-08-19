@@ -97,6 +97,61 @@ enum ExpenseStatus {
   ACTIVE
   VOID
 }
+enum ExpenseCategoryScope {
+  EVENT
+  GENERAL
+  BOTH
+}
+enum FinancialAccountType {
+  CASH
+  BANK
+  MERCADO_PAGO
+  THIRD_PARTY
+  OTHER
+}
+enum TreasuryDirection {
+  INFLOW
+  OUTFLOW
+}
+enum TreasuryCategory {
+  OPENING_BALANCE
+  CLIENT_PAYMENT
+  STAFF_PAYMENT
+  EVENT_EXPENSE
+  GENERAL_EXPENSE
+  REIMBURSEMENT
+  TRANSFER
+  INVESTMENT
+  OWNER_WITHDRAWAL
+  OWNER_CONTRIBUTION
+  ADJUSTMENT
+  OTHER
+}
+enum TreasuryStatus {
+  ACTIVE
+  VOID
+}
+enum ClientPaymentType {
+  DEPOSIT
+  PARTIAL
+  BALANCE
+  OTHER
+}
+enum ClientPaymentMethod {
+  TRANSFER
+  CASH
+  MERCADO_PAGO
+  OTHER
+}
+enum ReimbursementStatus {
+  PENDING
+  PAID
+  VOID
+}
+enum GeneralExpenseType {
+  OPERATING
+  INVESTMENT
+}
 enum FinancialStatus {
   OPEN
   READY_TO_CLOSE
@@ -123,6 +178,23 @@ model User {
   eventExpensesCreated EventExpense[] @relation("ExpenseCreator")
   eventExpensesVoided EventExpense[] @relation("ExpenseVoider")
   financialEventsClosed Event[] @relation("FinancialCloser")
+  treasuryTransactionsCreated TreasuryTransaction[] @relation("TreasuryCreator")
+  treasuryTransactionsVoided TreasuryTransaction[] @relation("TreasuryVoider")
+  clientPaymentsCreated ClientPayment[] @relation("ClientPaymentCreator")
+  clientPaymentsVoided ClientPayment[] @relation("ClientPaymentVoider")
+  openingBalancesCreated OpeningBalance[]
+  transfersCreated AccountTransfer[] @relation("TransferCreator")
+  transfersVoided AccountTransfer[] @relation("TransferVoider")
+  reimbursementsCreated StaffReimbursement[] @relation("ReimbursementCreator")
+  reimbursementsPaid StaffReimbursement[] @relation("ReimbursementPayer")
+  reimbursementsVoided StaffReimbursement[] @relation("ReimbursementVoider")
+  generalExpensesCreated GeneralExpense[] @relation("GeneralExpenseCreator")
+  generalExpensesVoided GeneralExpense[] @relation("GeneralExpenseVoider")
+  withdrawalsCreated OwnerWithdrawal[] @relation("WithdrawalCreator")
+  withdrawalsVoided OwnerWithdrawal[] @relation("WithdrawalVoider")
+  contributionsCreated OwnerContribution[] @relation("ContributionCreator")
+  contributionsVoided OwnerContribution[] @relation("ContributionVoider")
+  financialSettingsUpdated FinancialSetting[]
 }
 
 model Session {
@@ -154,6 +226,7 @@ model Client {
   contacts ClientContact[]
   quotes Quote[]
   events Event[]
+  payments ClientPayment[]
   @@index([name])
 }
 
@@ -234,6 +307,7 @@ model Quote {
   endTime String @db.VarChar(5)
   status QuoteStatus @default(CONSULTA)
   notes String?
+  paymentDueDate DateTime? @db.Date
   createdById String @db.Uuid
   confirmedVersionId String? @unique @db.Uuid
   createdAt DateTime @default(now())
@@ -244,6 +318,7 @@ model Quote {
   versions QuoteVersion[] @relation("QuoteVersions")
   confirmedVersion QuoteVersion? @relation("ConfirmedVersion", fields: [confirmedVersionId], references: [id])
   event Event?
+  payments ClientPayment[]
   @@index([eventDate])
   @@index([status])
 }
@@ -275,6 +350,7 @@ model QuoteVersion {
   createdBy User @relation("VersionCreator", fields: [createdById], references: [id])
   items QuoteItem[]
   sourceEvent Event? @relation("SourceVersion")
+  clientPayments ClientPayment[]
   @@unique([quoteId, versionNumber])
   @@index([quoteId, createdAt])
 }
@@ -335,6 +411,7 @@ model Event {
   staffAssignments EventStaff[]
   staffPayments StaffPayment[]
   expenses EventExpense[]
+  clientPayments ClientPayment[]
   @@index([eventDate])
   @@index([managerStaffId])
   @@index([financialStatus, eventDate])
@@ -358,6 +435,9 @@ model Staff {
   eventAssignments EventStaff[]
   payments StaffPayment[]
   expensesPaid EventExpense[]
+  reimbursements StaffReimbursement[]
+  generalExpensesPaid GeneralExpense[]
+  withdrawals OwnerWithdrawal[]
   @@index([active, name])
 }
 
@@ -399,13 +479,19 @@ model StaffPayment {
   voidedById String? @db.Uuid
   voidReason String?
   createdAt DateTime @default(now())
+  accountId String? @db.Uuid
+  treasuryTransactionId String? @unique @db.Uuid
+  idempotencyKey String? @unique @db.Uuid
   staff Staff @relation(fields: [staffId], references: [id], onDelete: Restrict)
   event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
   createdBy User @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
   voidedBy User? @relation("PaymentVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  account FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction? @relation("StaffPaymentTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
   @@index([staffId, paymentDate])
   @@index([eventId])
   @@index([status, currency])
+  @@index([accountId])
 }
 
 model ExpenseCategory {
@@ -414,9 +500,11 @@ model ExpenseCategory {
   slug String @unique
   active Boolean @default(true)
   sortOrder Int @default(0)
+  scope ExpenseCategoryScope @default(EVENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   expenses EventExpense[]
+  generalExpenses GeneralExpense[]
   @@index([active, sortOrder])
 }
 
@@ -440,16 +528,276 @@ model EventExpense {
   voidedAt DateTime?
   voidedById String? @db.Uuid
   voidReason String?
+  accountId String? @db.Uuid
+  treasuryTransactionId String? @unique @db.Uuid
+  idempotencyKey String? @unique @db.Uuid
   event Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
   category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   quoteItem QuoteItem? @relation(fields: [quoteItemId], references: [id], onDelete: SetNull)
   paidByStaff Staff? @relation(fields: [paidByStaffId], references: [id], onDelete: SetNull)
   createdBy User @relation("ExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
   voidedBy User? @relation("ExpenseVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  account FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction? @relation("EventExpenseTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  reimbursement StaffReimbursement?
   @@index([eventId, status, currency])
   @@index([categoryId, expenseDate])
   @@index([paidByStaffId])
   @@index([quoteItemId])
+  @@index([accountId])
+}
+
+model FinancialAccount {
+  id String @id @default(uuid()) @db.Uuid
+  name String
+  type FinancialAccountType
+  currency Currency
+  active Boolean @default(true)
+  includeInAvailableCash Boolean @default(true)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  transactions TreasuryTransaction[]
+  openingBalances OpeningBalance[]
+  clientPayments ClientPayment[]
+  staffPayments StaffPayment[]
+  eventExpenses EventExpense[]
+  generalExpenses GeneralExpense[]
+  reimbursements StaffReimbursement[]
+  transfersFrom AccountTransfer[] @relation("TransferFrom")
+  transfersTo AccountTransfer[] @relation("TransferTo")
+  withdrawals OwnerWithdrawal[]
+  contributions OwnerContribution[]
+  @@unique([name, currency])
+  @@index([active, currency])
+}
+
+model TreasuryTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  accountId String @db.Uuid
+  direction TreasuryDirection
+  category TreasuryCategory
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  transactionDate DateTime @db.Date
+  description String
+  referenceType String?
+  referenceId String?
+  status TreasuryStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  createdBy User @relation("TreasuryCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("TreasuryVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  clientPayment ClientPayment? @relation("ClientPaymentTreasury")
+  staffPayment StaffPayment? @relation("StaffPaymentTreasury")
+  eventExpense EventExpense? @relation("EventExpenseTreasury")
+  generalExpense GeneralExpense? @relation("GeneralExpenseTreasury")
+  reimbursement StaffReimbursement? @relation("ReimbursementTreasury")
+  openingBalance OpeningBalance?
+  transferOut AccountTransfer? @relation("TransferOut")
+  transferIn AccountTransfer? @relation("TransferIn")
+  withdrawal OwnerWithdrawal? @relation("WithdrawalTreasury")
+  contribution OwnerContribution? @relation("ContributionTreasury")
+  @@index([accountId, transactionDate, status])
+  @@index([referenceType, referenceId])
+  @@index([category, currency, transactionDate])
+}
+
+model OpeningBalance {
+  id String @id @default(uuid()) @db.Uuid
+  accountId String @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  balanceDate DateTime @db.Date
+  notes String?
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction @relation(fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  @@index([accountId, balanceDate])
+}
+
+model ClientPayment {
+  id String @id @default(uuid()) @db.Uuid
+  clientId String @db.Uuid
+  eventId String? @db.Uuid
+  quoteId String? @db.Uuid
+  quoteVersionId String @db.Uuid
+  accountId String @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  paymentDate DateTime @db.Date
+  paymentMethod ClientPaymentMethod
+  paymentType ClientPaymentType
+  notes String?
+  receivedViaPartner Boolean @default(false)
+  partnerName String?
+  status PaymentStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  quote Quote? @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  quoteVersion QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction @relation("ClientPaymentTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation("ClientPaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("ClientPaymentVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([clientId, paymentDate])
+  @@index([eventId, status])
+  @@index([quoteId, status])
+}
+
+model AccountTransfer {
+  id String @id @default(uuid()) @db.Uuid
+  fromAccountId String @db.Uuid
+  toAccountId String @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  transferDate DateTime @db.Date
+  description String
+  status TreasuryStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  outTransactionId String @unique @db.Uuid
+  inTransactionId String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  fromAccount FinancialAccount @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount FinancialAccount @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  outTransaction TreasuryTransaction @relation("TransferOut", fields: [outTransactionId], references: [id], onDelete: Restrict)
+  inTransaction TreasuryTransaction @relation("TransferIn", fields: [inTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation("TransferCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("TransferVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([transferDate, currency])
+}
+
+model StaffReimbursement {
+  id String @id @default(uuid()) @db.Uuid
+  staffId String @db.Uuid
+  eventExpenseId String? @unique @db.Uuid
+  generalExpenseId String? @unique @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  status ReimbursementStatus @default(PENDING)
+  paidAt DateTime? @db.Date
+  paymentAccountId String? @db.Uuid
+  notes String?
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String? @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  paidById String? @db.Uuid
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  eventExpense EventExpense? @relation(fields: [eventExpenseId], references: [id], onDelete: Restrict)
+  generalExpense GeneralExpense? @relation(fields: [generalExpenseId], references: [id], onDelete: Restrict)
+  paymentAccount FinancialAccount? @relation(fields: [paymentAccountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction? @relation("ReimbursementTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation("ReimbursementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  paidBy User? @relation("ReimbursementPayer", fields: [paidById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("ReimbursementVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([staffId, status, currency])
+}
+
+model GeneralExpense {
+  id String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  description String
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  expenseDate DateTime @db.Date
+  type GeneralExpenseType @default(OPERATING)
+  accountId String? @db.Uuid
+  paidByStaffId String? @db.Uuid
+  paymentMethod ExpensePaymentMethod?
+  notes String?
+  status ExpenseStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String? @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  account FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  paidByStaff Staff? @relation(fields: [paidByStaffId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction? @relation("GeneralExpenseTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  reimbursement StaffReimbursement?
+  createdBy User @relation("GeneralExpenseCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("GeneralExpenseVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+  @@index([expenseDate, status, currency])
+}
+
+model OwnerWithdrawal {
+  id String @id @default(uuid()) @db.Uuid
+  staffId String? @db.Uuid
+  accountId String @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  withdrawalDate DateTime @db.Date
+  notes String?
+  status TreasuryStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  staff Staff? @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction @relation("WithdrawalTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation("WithdrawalCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("WithdrawalVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+}
+
+model OwnerContribution {
+  id String @id @default(uuid()) @db.Uuid
+  accountId String @db.Uuid
+  amount Decimal @db.Decimal(18,2)
+  currency Currency
+  contributionDate DateTime @db.Date
+  notes String?
+  status TreasuryStatus @default(ACTIVE)
+  idempotencyKey String @unique @db.Uuid
+  treasuryTransactionId String @unique @db.Uuid
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  voidedAt DateTime?
+  voidedById String? @db.Uuid
+  voidReason String?
+  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction @relation("ContributionTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  createdBy User @relation("ContributionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy User? @relation("ContributionVoider", fields: [voidedById], references: [id], onDelete: Restrict)
+}
+
+model FinancialSetting {
+  id String @id @default(uuid()) @db.Uuid
+  currency Currency @unique
+  minimumCashReserve Decimal @default(0) @db.Decimal(18,2)
+  financialTrackingStartDate DateTime? @db.Date
+  updatedById String @db.Uuid
+  updatedAt DateTime @updatedAt
+  updatedBy User @relation(fields: [updatedById], references: [id], onDelete: Restrict)
 }
 
 model NumberSequence {
