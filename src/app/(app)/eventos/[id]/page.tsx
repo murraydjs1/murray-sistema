@@ -16,6 +16,7 @@ import Decimal from "decimal.js";
 import { createClientPayment, updatePaymentDueDate, voidClientPayment } from "@/app/actions/treasury";
 import { changeEventStatus, removeAssignment, setEventManager, updateAssignment } from "@/app/actions/event-staff";
 import { closeEventFinances, reopenEventFinances, updateExpense, voidExpense } from "@/app/actions/expenses";
+import { LegacyEventEditor } from "@/components/import/legacy-event-editor";
 
 const civil=(e:{id:string;number:string;eventDate:Date;startTime:string;endTime:string;setupTime:string|null})=>({id:e.id,number:e.number,eventDate:e.eventDate.toISOString().slice(0,10),startTime:e.startTime,endTime:e.endTime,setupTime:e.setupTime});
 export default async function EventDetail({params}:{params:Promise<{id:string}>}){
@@ -23,7 +24,7 @@ export default async function EventDetail({params}:{params:Promise<{id:string}>}
  const [e,staff,categories,accounts]=await Promise.all([
   prisma.event.findUnique({where:{id},include:{client:{include:{contacts:true}},eventType:true,sourceQuoteVersion:{include:{items:true}},sourceQuote:{include:{payments:{include:{account:true},orderBy:{paymentDate:"desc"}}}},legacyFinancialData:true,managerStaff:true,financialClosedBy:true,staffAssignments:{where:{active:true},include:{staff:true},orderBy:[{staff:{name:"asc"}},{assignmentType:"asc"}]},expenses:{include:{category:true,paidByStaff:true,quoteItem:true},orderBy:[{expenseDate:"desc"},{createdAt:"desc"}]}}}),
   prisma.staff.findMany({where:{active:true},orderBy:{name:"asc"}}), prisma.expenseCategory.findMany({where:{active:true,scope:{in:["EVENT","BOTH"]}},orderBy:[{sortOrder:"asc"},{name:"asc"}]}),prisma.financialAccount.findMany({where:{active:true},orderBy:{name:"asc"}})
- ]); if(!e)notFound();if(!e.sourceQuote||!e.sourceQuoteVersion)return <LegacyEvent event={e}/>;assertQuotedEvent(e);
+ ]); if(!e)notFound();if(!e.sourceQuote||!e.sourceQuoteVersion)return <><LegacyEvent event={e}/><LegacyEventEditor event={e} staff={staff}/></>;assertQuotedEvent(e);
  const contact=e.client.contacts.find(c=>c.isPrimary)||e.client.contacts[0], locked=e.financialStatus==="CLOSED";
  const assignedIds=[...new Set(e.staffAssignments.map(a=>a.staffId))]; const others=assignedIds.length?await prisma.eventStaff.findMany({where:{active:true,staffId:{in:assignedIds},eventId:{not:id}},include:{event:true,staff:true}}):[]; const conflicts=others.filter(a=>eventsOverlap(civil(e),civil(a.event)));
  const profit=calculateEventProfitability({version:e.sourceQuoteVersion,assignments:e.staffAssignments,expenses:e.expenses});
