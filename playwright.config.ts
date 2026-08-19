@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+process.loadEnvFile?.(".env");
 const e2eDatabaseUrl=process.env.E2E_DATABASE_URL;
 const e2ePassword=process.env.SEED_DEMO_PASSWORD;
 const e2eAuthSecret=process.env.E2E_AUTH_SECRET;
