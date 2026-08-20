@@ -125,7 +125,7 @@ a.card:hover{box-shadow:0 20px 50px rgba(0,0,0,.2)}
 @media(max-width:600px){.main{padding-top:16px}.workspace-header{margin-bottom:24px}.topbar{margin-bottom:24px}.topbar h1{font-size:32px}.dashboard-card{min-height:156px;padding:18px}.login-card{padding:26px}.login-card h1{font-size:31px}}
 
 /* Immersive sign-in: the event story stays visible while the form remains calm and readable. */
-.login{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(390px,.88fr);place-items:stretch;gap:0;min-height:100dvh;padding:0;overflow:hidden;background:#090d0f linear-gradient(rgba(9,13,15,.2),rgba(9,13,15,.2)),url('/brand/login-hero.png') center/cover no-repeat}
+.login{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(390px,.88fr);place-items:stretch;gap:0;min-height:100dvh;padding:0;overflow:hidden;background:#090d0f linear-gradient(rgba(9,13,15,.2),rgba(9,13,15,.2)),url('/brand/login-hero.jpg') center/cover no-repeat}
 .login::before{z-index:2;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:48px 48px;mask-image:linear-gradient(to bottom,black,transparent 72%)}
 .login-hero{position:relative;min-height:100dvh;overflow:hidden;background:#111;isolation:isolate}
 .login-hero-image{position:absolute;inset:-2%;width:104%;height:104%;object-fit:cover;object-position:center center;filter:blur(3px) saturate(.96) brightness(.62);transform:scale(1.03);animation:login-drift 18s ease-in-out infinite alternate}

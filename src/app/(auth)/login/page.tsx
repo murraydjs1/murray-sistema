@@ -10,7 +10,7 @@ export default function LoginPage() {
     <main className="login">
       <aside className="login-hero" aria-label="Murray DJs en acción">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="login-hero-image" src="/brand/login-hero.png" alt="Murray DJs musicalizando un evento" />
+        <img className="login-hero-image" src="/brand/login-hero.jpg" alt="Murray DJs musicalizando un evento" />
         <div className="login-hero-scrim" />
         <div className="login-message" aria-label="Familia, pasión, música. Desde hace años haciendo de cada evento una noche para recordar.">
           <div className="login-message-title" aria-hidden="true">
