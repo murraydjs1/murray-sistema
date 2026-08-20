@@ -26,8 +26,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const eventTypes = await prisma.eventType.findMany({ where: { active: true }, orderBy: { name: "asc" } });
   const clients = await prisma.client.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } });
   const collected = emptyMoney(); const receivable = emptyMoney(); const costs = emptyMoney(); const profit = emptyMoney();
+  const operational = { confirmed: 0, realized: 0, readyToClose: 0, closed: 0 };
 
   for (const event of events) {
+    if (event.status === "CONFIRMADO") operational.confirmed += 1;
+    if (event.status === "REALIZADO") operational.realized += 1;
+    if (event.financialStatus === "READY_TO_CLOSE") operational.readyToClose += 1;
+    if (event.financialStatus === "CLOSED") operational.closed += 1;
+
     const legacy = event.legacyFinancialData;
     if (legacy) {
       const values = { ARS: { sale: legacy.saleArs, deposit: legacy.depositArs, cost: legacy.costArs, result: legacy.resultArs }, USD: { sale: legacy.saleUsd, deposit: legacy.depositUsd, cost: legacy.costUsd, result: legacy.resultUsd } };
@@ -47,7 +53,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     if (event.financialStatus === "CLOSED") profit[currency] = profit[currency].plus(result.result);
   }
 
-  const currencies = selectedCurrency ? [selectedCurrency] : Object.values(Currency);
+  const currencies = selectedCurrency ? [selectedCurrency] : [Currency.ARS];
   return <>
     <div className="topbar"><div><div className="eyebrow">Dashboard</div><h1>Resumen del período</h1></div><Link className="btn btn-accent" href="/eventos/nuevo">+ Evento</Link></div>
     <details className="card filters"><summary>Filtrar período</summary><form method="get" className="filter-grid">
@@ -55,12 +61,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="field"><label htmlFor="filter-type">Tipo de evento</label><select id="filter-type" name="eventTypeId" defaultValue={filters.eventTypeId || ""}><option value="">Todos</option>{eventTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></div>
       <div className="field"><label htmlFor="filter-status">Estado</label><select id="filter-status" name="status" defaultValue={filters.status || ""}><option value="">Todos</option>{Object.values(EventStatus).map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></div>
       <div className="field"><label htmlFor="filter-client">Cliente</label><select id="filter-client" name="clientId" defaultValue={filters.clientId || ""}><option value="">Todos</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></div>
-      <div className="field"><label htmlFor="filter-currency">Moneda</label><select id="filter-currency" name="currency" defaultValue={filters.currency || ""}><option value="">Todas</option><option>ARS</option><option>USD</option></select></div>
+      <div className="field"><label htmlFor="filter-currency">Moneda</label><select id="filter-currency" name="currency" defaultValue={filters.currency || "ARS"}><option value="">Todas</option><option>ARS</option><option>USD</option></select></div>
       <div className="field filter-search"><label htmlFor="filter-q">Buscar</label><input id="filter-q" name="q" defaultValue={filters.q || ""} placeholder="Número, cliente o lugar" /></div><div className="filter-actions"><button className="btn btn-primary">Aplicar filtros</button><Link className="btn btn-secondary" href="/dashboard">Limpiar</Link></div>
     </form></details>
+    <section className="grid grid-4 metrics">
+      <Metric label="Confirmados" value={String(operational.confirmed)} />
+      <Metric label="Realizados" value={String(operational.realized)} />
+      <Metric label="Listos para cerrar" value={String(operational.readyToClose)} />
+      <Metric label="Cerrados" value={String(operational.closed)} />
+    </section>
     <section className="dashboard-overview"><OverviewCard href="/agenda" label="Eventos del período" value={String(events.length)} detail="Ver agenda" /><MoneyCard href="/tesoreria/movimientos" label="Cobrado" totals={collected} currencies={currencies} detail="Ver cobros" /><MoneyCard href="/tesoreria/por-cobrar" label="A cobrar" totals={receivable} currencies={currencies} detail="Ver cuentas" /><MoneyCard href="/gastos" label="Costos" totals={costs} currencies={currencies} detail="Ver gastos" /><MoneyCard href="/reportes/rentabilidad" label="Ganancia" totals={profit} currencies={currencies} detail="Ver rentabilidad" tone="result" /></section>
   </>;
 }
 
 function MoneyCard({ href, label, totals, currencies, detail, tone }: { href: string; label: string; totals: MoneyTotals; currencies: Currency[]; detail: string; tone?: "result" }) { return <Link href={href} className={`card dashboard-card${tone ? " dashboard-card-result" : ""}`}><span>{label}</span><div className="dashboard-values">{currencies.map((currency) => <strong key={currency}>{formatMoney(totals[currency].toFixed(2), currency)}</strong>)}</div><small>{detail} →</small></Link>; }
 function OverviewCard({ href, label, value, detail }: { href: string; label: string; value: string; detail: string }) { return <Link href={href} className="card dashboard-card"><span>{label}</span><div className="dashboard-values"><strong>{value}</strong></div><small>{detail} →</small></Link>; }
+function Metric({ label, value }: { label: string; value: string }) { return <div className="card metric"><span>{label}</span><strong>{value}</strong></div>; }
