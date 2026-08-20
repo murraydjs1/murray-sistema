@@ -12,12 +12,14 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="login-hero-image" src="/brand/login-hero.png" alt="Murray DJs musicalizando un evento" />
         <div className="login-hero-scrim" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          className="login-message"
-          src="/brand/login-message.png"
-          alt="Familia, pasión, música. Desde hace años haciendo de cada evento una noche para recordar."
-        />
+        <div className="login-message" aria-label="Familia, pasión, música. Desde hace años haciendo de cada evento una noche para recordar.">
+          <div className="login-message-title" aria-hidden="true">
+            FAMILIA<span>,</span><br />
+            PASIÓN<span>,</span><br />
+            MÚSICA<span>.</span>
+          </div>
+          <p>Desde hace años<br />haciendo de cada evento<br />una noche para <span>recordar.</span></p>
+        </div>
       </aside>
       <section className="login-panel">
         <div className="login-panel-content">
