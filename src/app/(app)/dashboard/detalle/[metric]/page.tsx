@@ -10,6 +10,7 @@ import { prisma } from "@/server/db/prisma";
 type Metric = "eventos" | "cobrado" | "a-cobrar" | "costos" | "ganancia";
 type Filters = { from?: string; to?: string; eventTypeId?: string; status?: string; clientId?: string; currency?: string; q?: string };
 type DetailRow = { eventId: string; date: Date; number: string; eventName: string; client: string; venue: string; amount: Decimal; currency: Currency; note: string };
+type DashboardEvent = Prisma.EventGetPayload<{ include: { client: true; eventType: true; legacyFinancialData: true; sourceQuoteVersion: true; clientPayments: true; staffAssignments: true; expenses: true } }>;
 
 const titles: Record<Metric, { title: string; eyebrow: string; description: string }> = {
   eventos: { title: "Eventos del período", eyebrow: "Detalle", description: "Eventos incluidos por fecha y filtros seleccionados." },
@@ -61,9 +62,9 @@ export default async function DashboardMetricDetail({ params, searchParams }: { 
   </>;
 }
 
-function buildRows(metric: Metric, events: Awaited<ReturnType<typeof prisma.event.findMany>>, selectedCurrency?: Currency): DetailRow[] {
+function buildRows(metric: Metric, events: DashboardEvent[], selectedCurrency?: Currency): DetailRow[] {
   const rows: DetailRow[] = [];
-  for (const event of events as any[]) {
+  for (const event of events) {
     if (metric === "eventos") {
       rows.push(baseRow(event, new Decimal(1), Currency.ARS, event.status.replaceAll("_", " ")));
       continue;
@@ -91,7 +92,7 @@ function buildRows(metric: Metric, events: Awaited<ReturnType<typeof prisma.even
     if (!version) continue;
     const currency = version.currency as Currency;
     if (selectedCurrency && selectedCurrency !== currency) continue;
-    const paid = event.clientPayments.filter((payment: any) => payment.currency === currency).reduce((sum: Decimal, payment: any) => sum.plus(payment.amount), new Decimal(0));
+    const paid = event.clientPayments.filter((payment) => payment.currency === currency).reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0));
     const total = new Decimal(version.totalFinal);
     if (metric === "cobrado" && paid.gt(0)) rows.push(baseRow(event, paid, currency, "Cobros activos"));
     if (metric === "a-cobrar" && total.minus(paid).gt(0)) rows.push(baseRow(event, total.minus(paid), currency, "Total menos cobrado"));
@@ -119,7 +120,7 @@ function buildFilters(filters: Filters) {
   return { from: new Date(`${from}T00:00:00.000Z`), to: new Date(`${to}T00:00:00.000Z`), selectedCurrency, eventWhere };
 }
 
-function baseRow(event: any, amount: Decimal, currency: Currency, note: string): DetailRow {
+function baseRow(event: DashboardEvent, amount: Decimal, currency: Currency, note: string): DetailRow {
   return { eventId: event.id, date: event.eventDate, number: event.number, eventName: event.eventType?.name || "Evento", client: event.client?.name || "Sin cliente", venue: event.venue, amount, currency, note };
 }
 function isMetric(value: string): value is Metric { return ["eventos", "cobrado", "a-cobrar", "costos", "ganancia"].includes(value); }
