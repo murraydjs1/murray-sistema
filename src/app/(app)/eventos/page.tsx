@@ -4,8 +4,9 @@ import Link from "next/link";
 import { formatMoney } from "@/lib/money/format";
 import { requireManagement } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
+import { humanLabel } from "@/lib/ui/labels";
 
-type SearchParams = { sort?: string };
+type SearchParams = { sort?: string; q?: string; status?: string };
 type EventRow = Prisma.EventGetPayload<{
   include: {
     client: true;
@@ -22,9 +23,17 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
   await requireManagement();
   const params = await searchParams;
   const sort = params.sort === "oldest" ? "oldest" : "newest";
+  const selectedStatus = Object.values(EventStatus).includes(params.status as EventStatus) ? params.status as EventStatus : undefined;
   const orderBy = sort === "oldest" ? [{ eventDate: "asc" as const }, { startTime: "asc" as const }] : [{ eventDate: "desc" as const }, { startTime: "asc" as const }];
   const events = await prisma.event.findMany({
-    where: { status: { not: EventStatus.CANCELADO } },
+    where: {
+      status: selectedStatus ?? { not: EventStatus.CANCELADO },
+      OR: params.q ? [
+        { number: { contains: params.q, mode: "insensitive" } },
+        { venue: { contains: params.q, mode: "insensitive" } },
+        { client: { name: { contains: params.q, mode: "insensitive" } } },
+      ] : undefined,
+    },
     include: { client: true, eventType: true, sourceQuoteVersion: true, legacyFinancialData: true, managerStaff: true, staffAssignments: { where: { active: true }, include: { staff: true } }, sourceQuote: { include: { payments: { where: { status: "ACTIVE" } } } } },
     orderBy,
   });
@@ -39,7 +48,7 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
           <h1>Eventos</h1>
         </div>
         <div className="row">
-          <Link className="btn btn-secondary" href={`/eventos?sort=${sort === "newest" ? "oldest" : "newest"}`}>
+          <Link className="btn btn-secondary" href={`/eventos?${eventQuery({ ...params, sort: sort === "newest" ? "oldest" : "newest" })}`}>
             {sort === "newest" ? "Más antiguos" : "Más recientes"}
           </Link>
           <Link className="btn btn-primary" href="/eventos/nuevo">
@@ -47,6 +56,13 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
           </Link>
         </div>
       </div>
+      <form className="toolbar" method="get">
+        <input type="hidden" name="sort" value={sort} />
+        <div className="field toolbar-search"><label htmlFor="events-q">Buscar</label><input id="events-q" name="q" defaultValue={params.q || ""} placeholder="Número, cliente o lugar" /></div>
+        <div className="field"><label htmlFor="events-status">Estado</label><select id="events-status" name="status" defaultValue={selectedStatus || ""}><option value="">Estados activos</option>{Object.values(EventStatus).map((status) => <option key={status} value={status}>{humanLabel(status)}</option>)}</select></div>
+        <button className="btn btn-secondary">Filtrar</button>
+        {(params.q || selectedStatus) && <Link className="btn btn-ghost" href={`/eventos?sort=${sort}`}>Limpiar</Link>}
+      </form>
       <div className="stack">
         {grouped.map(({ label, rows }) => (
           <section key={label}>
@@ -78,10 +94,10 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
                       <tr key={event.id} className={canceled ? "expense-void" : ""}>
                         <td data-label="Fecha">{event.eventDate.toLocaleDateString("es-AR", { timeZone: "UTC" })}</td>
                         <td data-label="Evento"><Link href={`/eventos/${event.id}`}>{event.number} · {event.eventType.name}</Link></td>
-                        <td data-label="Cliente">{event.client.name}<small>{event.client.type}</small></td>
+                        <td data-label="Cliente"><span className="cell-primary">{event.client.name}</span><small>{humanLabel(event.client.type)}</small></td>
                         <td data-label="Lugar">{event.venue}<small>{[event.address, event.locality].filter(Boolean).join(", ") || "Sin dirección"}</small></td>
-                        <td data-label="Estado"><span className={`badge ${canceled ? "badge-danger" : ""}`}>{event.status.replaceAll("_", " ")}</span></td>
-                        <td data-label="Encargado">{event.managerStaff?.name || "Sin definir"}<small>{event.staffAssignments.map((a) => a.staff.name).join(" · ") || "Sin asignar"}</small></td>
+                        <td data-label="Estado"><span className={`badge ${canceled ? "badge-danger" : event.status === "REALIZADO" ? "badge-green" : "badge-brand"}`}>{humanLabel(event.status)}</span></td>
+                        <td data-label="Encargado"><span className="cell-primary">{event.managerStaff?.name || "Sin definir"}</span><small>{event.staffAssignments.map((a) => a.staff.name).join(" · ") || "Sin asignar"}</small></td>
                         <td data-label="Cobrado">{formatMoney(paid.toFixed(2), current)}</td>
                         <td data-label="Pendiente">{formatMoney(pending.toFixed(2), current)}</td>
                       </tr>
@@ -93,9 +109,15 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
           </section>
         ))}
       </div>
-      {!events.length && <div className="card empty">Todavía no hay eventos.</div>}
+      {!events.length && <div className="card empty"><strong>No encontramos eventos</strong><p>Probá con otra búsqueda o limpiá los filtros para ver todos los registros.</p></div>}
     </>
   );
+}
+
+function eventQuery(params: SearchParams) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+  return query.toString();
 }
 
 function groupByMonth(events: EventRow[]) {

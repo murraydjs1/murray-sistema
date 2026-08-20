@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/money/format";
 import { calculateEventProfitability } from "@/lib/profitability/event-profitability";
 import { requireManagement } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
+import { humanLabel } from "@/lib/ui/labels";
 
 type Filters = { from?: string; to?: string; eventTypeId?: string; status?: string; clientId?: string; currency?: string; q?: string };
 type MoneyTotals = Record<Currency, Decimal>;
@@ -59,7 +60,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     <details className="card filters"><summary>Filtrar período</summary><form method="get" className="filter-grid">
       <div className="field"><label htmlFor="filter-from">Desde</label><input id="filter-from" name="from" type="date" defaultValue={from} /></div><div className="field"><label htmlFor="filter-to">Hasta</label><input id="filter-to" name="to" type="date" defaultValue={to} /></div>
       <div className="field"><label htmlFor="filter-type">Tipo de evento</label><select id="filter-type" name="eventTypeId" defaultValue={filters.eventTypeId || ""}><option value="">Todos</option>{eventTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></div>
-      <div className="field"><label htmlFor="filter-status">Estado</label><select id="filter-status" name="status" defaultValue={filters.status || ""}><option value="">Todos</option>{Object.values(EventStatus).map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></div>
+      <div className="field"><label htmlFor="filter-status">Estado</label><select id="filter-status" name="status" defaultValue={filters.status || ""}><option value="">Todos</option>{Object.values(EventStatus).map((status) => <option key={status} value={status}>{humanLabel(status)}</option>)}</select></div>
       <div className="field"><label htmlFor="filter-client">Cliente</label><select id="filter-client" name="clientId" defaultValue={filters.clientId || ""}><option value="">Todos</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></div>
       <div className="field"><label htmlFor="filter-currency">Moneda</label><select id="filter-currency" name="currency" defaultValue={filters.currency || "ARS"}><option value="">Todas</option><option>ARS</option><option>USD</option></select></div>
       <div className="field filter-search"><label htmlFor="filter-q">Buscar</label><input id="filter-q" name="q" defaultValue={filters.q || ""} placeholder="Número, cliente o lugar" /></div><div className="filter-actions"><button className="btn btn-primary">Aplicar filtros</button><Link className="btn btn-secondary" href="/dashboard">Limpiar</Link></div>
