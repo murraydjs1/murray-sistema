@@ -76,11 +76,13 @@ export function AppNavigation({ role, name, logoutAction }: { role: Role; name: 
         </div>)}
       </nav>
       <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <span>{name.slice(0, 1).toUpperCase()}</span>
-          <div><strong>{name}</strong><small>{role === "ADMIN" ? "Administrador" : role === "ADMIN_FINANCIERO" ? "Administración" : "Personal"}</small></div>
+        <div className="sidebar-account">
+          <div className="sidebar-user">
+            <span>{name.slice(0, 1).toUpperCase()}</span>
+            <div><strong>{name}</strong><small>{role === "ADMIN" ? "Administrador" : role === "ADMIN_FINANCIERO" ? "Administración" : "Personal"}</small></div>
+          </div>
+          <form action={logoutAction}><button className="btn btn-ghost sidebar-logout" title="Cerrar sesión" aria-label="Cerrar sesión"><LogOut size={18} aria-hidden /></button></form>
         </div>
-        <form action={logoutAction}><button className="btn btn-ghost sidebar-logout" title="Cerrar sesión"><LogOut size={18} aria-hidden /><span>Salir</span></button></form>
       </div>
     </aside>
     <nav className={`mobilebar ${staff ? "staff-mobilebar" : ""}`} aria-label="Navegación móvil">

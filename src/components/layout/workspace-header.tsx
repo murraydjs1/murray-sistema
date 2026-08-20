@@ -20,13 +20,7 @@ const labels: Record<string, { section: string; title: string }> = {
   "/staff": { section: "Operación", title: "Mis eventos" },
 };
 
-const roleLabels: Record<string, string> = {
-  ADMIN: "Administrador",
-  ADMIN_FINANCIERO: "Administración financiera",
-  STAFF: "Personal",
-};
-
-export function WorkspaceHeader({ name, role }: { name: string; role: string }) {
+export function WorkspaceHeader() {
   const pathname = usePathname();
   const entry = Object.entries(labels).find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
   const current = entry?.[1] ?? { section: "Murray DJs", title: "Sistema" };
@@ -39,13 +33,6 @@ export function WorkspaceHeader({ name, role }: { name: string; role: string }) 
         <ChevronRight size={14} aria-hidden />
         <strong>{current.title}</strong>
       </nav>
-      <div className="workspace-user">
-        <span className="avatar" aria-hidden>{name.slice(0, 1).toUpperCase()}</span>
-        <div>
-          <strong>{name}</strong>
-          <small>{roleLabels[role] ?? role}</small>
-        </div>
-      </div>
     </header>
   );
 }

@@ -8,7 +8,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return <div className="shell">
     <AppNavigation role={user.role} name={user.name} logoutAction={logout} />
     <main className="main">
-      <WorkspaceHeader name={user.name} role={user.role} />
+      <WorkspaceHeader />
       <div className="main-content">{children}</div>
     </main>
   </div>;
