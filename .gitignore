@@ -3,6 +3,7 @@ node_modules
 .dev-postgres
 .next
 .env
+.env.local
 *.tsbuildinfo
 playwright-report
 test-results
