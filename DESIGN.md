@@ -83,8 +83,8 @@ Contraste mínimo WCAG AA, `:focus-visible` rojo de 2 px, labels asociados, boto
 
 Los logos oficiales viven en `public/brand/`:
 
-- `murray-logo-dark.svg`: versión blanca sobre fondo oscuro, uso principal en login, sidebar y superficies dark.
+- `murray-logo-dark.svg`: versión principal blanca sobre placa negra, centrada, con auriculares rojos arriba del wordmark `MURRAY` y bajada `DISC JOCKEYS`. Es la referencia de uso para login, sidebar y superficies dark.
 - `murray-logo-light.svg`: versión negra sobre fondo claro, reservada para piezas o exportaciones claras.
 - `murray-favicon.svg`: auriculares rojos del logo sobre negro, uso en favicon/app icon.
 
-No recrear el logo como texto o ícono genérico. Mantener la proporción del wordmark; para favicon usar solo el símbolo simple porque el wordmark completo pierde legibilidad en tamaños chicos.
+No recrear el logo como texto o ícono genérico ni usar la variante horizontal con símbolo a la izquierda dentro del sistema. Mantener la proporción del wordmark; para favicon usar solo el símbolo simple porque el wordmark completo pierde legibilidad en tamaños chicos.
