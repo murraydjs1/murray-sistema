@@ -30,8 +30,9 @@ const textValue=(data:FormData,name:string)=>String(data.get(name)||"").trim();
 const nullableMoney=(data:FormData,name:string)=>{const value=textValue(data,name);if(!value)return null;if(!/^-?\d+(?:[.,]\d{1,2})?$/.test(value))throw new Error(`${name}: importe inválido`);return new Prisma.Decimal(value.replace(",","."));};
 
 export async function updateImportedEvent(data:FormData):Promise<void>{
-  const actor=await requireManagement(),eventId=textValue(data,"eventId"),clientName=textValue(data,"clientName"),eventDate=textValue(data,"eventDate"),startTime=textValue(data,"startTime"),endTime=textValue(data,"endTime"),setupTime=textValue(data,"setupTime"),venue=textValue(data,"venue"),managerStaffId=textValue(data,"managerStaffId")||null,status=textValue(data,"status");
+  const actor=await requireManagement(),eventId=textValue(data,"eventId"),eventTypeId=textValue(data,"eventTypeId"),clientName=textValue(data,"clientName"),eventDate=textValue(data,"eventDate"),startTime=textValue(data,"startTime"),endTime=textValue(data,"endTime"),setupTime=textValue(data,"setupTime"),venue=textValue(data,"venue"),managerStaffId=textValue(data,"managerStaffId")||null,status=textValue(data,"status");
   if(!eventId||!clientName||!venue)throw new Error("Cliente, fecha y lugar son obligatorios");
+  if(!eventTypeId)throw new Error("Seleccioná un tipo de evento");
   if(!/^\d{4}-\d{2}-\d{2}$/.test(eventDate))throw new Error("Fecha inválida");
   if(!/^\d{2}:\d{2}$/.test(startTime)||!/^\d{2}:\d{2}$/.test(endTime))throw new Error("Horario inválido");
   if(setupTime&&!/^\d{2}:\d{2}$/.test(setupTime))throw new Error("Hora de armado inválida");
@@ -39,12 +40,13 @@ export async function updateImportedEvent(data:FormData):Promise<void>{
   await prisma.$transaction(async tx=>{
     const current=await tx.event.findUniqueOrThrow({where:{id:eventId},include:{client:true,legacyFinancialData:true}});
     if(current.source!=="EXCEL_IMPORT")throw new Error("Solo se editan eventos importados desde esta acción");
+    await tx.eventType.findFirstOrThrow({where:{id:eventTypeId,active:true}});
     let client=await tx.client.findFirst({where:{name:{equals:clientName,mode:"insensitive"}}});
     if(!client)client=await tx.client.create({data:{name:clientName,type:"PARTICULAR",source:"OTRO",sourceOther:"Excel Miguel"}});
-    const event=await tx.event.update({where:{id:eventId},data:{clientId:client.id,eventDate:new Date(`${eventDate}T00:00:00.000Z`),startTime,endTime,setupTime:setupTime||null,venue,address:textValue(data,"address")||null,locality:textValue(data,"locality")||null,managerStaffId,status:status as never,notes:textValue(data,"notes")||null}});
+    const event=await tx.event.update({where:{id:eventId},data:{clientId:client.id,eventTypeId,eventDate:new Date(`${eventDate}T00:00:00.000Z`),startTime,endTime,setupTime:setupTime||null,venue,address:textValue(data,"address")||null,locality:textValue(data,"locality")||null,managerStaffId,status:status as never,notes:textValue(data,"notes")||null}});
     const legacyData={saleArs:nullableMoney(data,"saleArs"),saleUsd:nullableMoney(data,"saleUsd"),depositArs:nullableMoney(data,"depositArs"),depositUsd:nullableMoney(data,"depositUsd"),costArs:nullableMoney(data,"costArs"),costUsd:nullableMoney(data,"costUsd"),resultArs:nullableMoney(data,"resultArs"),resultUsd:nullableMoney(data,"resultUsd"),notes:textValue(data,"notes")||null};
     await tx.eventLegacyFinancialData.update({where:{eventId},data:legacyData});
-    await audit(tx,{userId:actor.id,action:"UPDATE_EXCEL_IMPORT",entity:"Event",entityId:eventId,previousValue:{client:current.client.name,eventDate:current.eventDate.toISOString(),venue:current.venue},newValue:{client:client.name,eventDate:event.eventDate.toISOString(),venue:event.venue},operationId:randomUUID()});
+    await audit(tx,{userId:actor.id,action:"UPDATE_EXCEL_IMPORT",entity:"Event",entityId:eventId,previousValue:{client:current.client.name,eventTypeId:current.eventTypeId,eventDate:current.eventDate.toISOString(),venue:current.venue},newValue:{client:client.name,eventTypeId:event.eventTypeId,eventDate:event.eventDate.toISOString(),venue:event.venue},operationId:randomUUID()});
   });
   revalidatePath(`/eventos/${eventId}`);revalidatePath("/agenda");revalidatePath("/dashboard");
 }
