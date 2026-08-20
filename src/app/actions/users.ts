@@ -15,7 +15,7 @@ export async function saveUser(formData: FormData) {
   const password = String(formData.get("password") || "");
   const role = String(formData.get("role")) as UserRole;
   if (!name || !email || !Object.values(UserRole).includes(role)) throw new Error("Datos de usuario inválidos");
-  if (!id && password.length < 12) throw new Error("La contraseña debe tener al menos 12 caracteres");
+  if (!id && !password) throw new Error("La contraseña es obligatoria");
   await prisma.$transaction(async (tx) => {
     const previous = id ? await tx.user.findUniqueOrThrow({ where: { id } }) : null;
     const user = id ? await tx.user.update({ where: { id }, data: { name, email, role, ...(password ? { passwordHash: await argon2.hash(password, { type: argon2.argon2id }) } : {}) } }) : await tx.user.create({ data: { name, email, role, passwordHash: await argon2.hash(password, { type: argon2.argon2id }) } });
