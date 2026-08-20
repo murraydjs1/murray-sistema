@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="928" height="534" viewBox="0 0 928 534" role="img" aria-label="Murray Disc Jockeys">
-  <rect width="928" height="534" fill="#000000"/>
-  <g transform="translate(464 188)" fill="none" stroke="#ff2b2f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M-21 2v-13c0-16 12-28 28-28h2c16 0 28 12 28 28V2"/>
-    <path d="M-21 0h-3c-4 0-7-3-7-7v-10c0-4 3-7 7-7h3z" fill="#ff2b2f" stroke="none"/>
-    <path d="M37 0h3c4 0 7-3 7-7v-10c0-4-3-7-7-7h-3z" fill="#ff2b2f" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="595" viewBox="0 0 1280 595" role="img" aria-label="Murray Disc Jockeys">
+  <rect width="1280" height="595" fill="#000000"/>
+  <g transform="translate(640 86)" fill="none" stroke="#ff0000" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-67 9v-27c0-39 28-68 67-68s67 29 67 68V9"/>
+    <path d="M-67 2h-7c-8 0-14-7-14-15v-31c0-8 6-15 14-15h7z" fill="#ff0000" stroke="none"/>
+    <path d="M67 2h7c8 0 14-7 14-15v-31c0-8-6-15-14-15h-7z" fill="#ff0000" stroke="none"/>
   </g>
-  <text x="464" y="312" text-anchor="middle" font-family="Montserrat, Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="132" font-weight="500" letter-spacing="-7" fill="#ffffff">MURRAY</text>
-  <text x="464" y="360" text-anchor="middle" font-family="Montserrat, Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="38" font-weight="400" letter-spacing="1" fill="#ffffff">DISC JOCKEYS</text>
+  <text x="640" y="433" text-anchor="middle" font-family="Montserrat, Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="255" font-weight="500" letter-spacing="-14" fill="#ffffff">MURRAY</text>
+  <text x="640" y="574" text-anchor="middle" font-family="Montserrat, Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="82" font-weight="600" letter-spacing="10" fill="#ffffff">DISC JOCKEYS</text>
 </svg>
