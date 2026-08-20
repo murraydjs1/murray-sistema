@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="600" viewBox="0 0 1050 600" role="img" aria-label="Murray Disc Jockeys">
+  <rect width="1050" height="600" fill="#ffffff"/>
+  <g transform="translate(92 120)">
+    <path d="M128 238c-36 0-65-29-65-65V132c0-63 51-114 114-114h5c63 0 114 51 114 114v41c0 36-29 65-65 65h-15v-78h44v-28c0-43-35-78-78-78h-5c-43 0-78 35-78 78v28h44v78h-15Z" fill="#ff2b2f"/>
+    <path d="M180 288c-32 0-58-26-58-58s26-58 58-58 58 26 58 58-26 58-58 58Zm0-82c-13 0-24 11-24 24s11 24 24 24 24-11 24-24-11-24-24-24Z" fill="#050708"/>
+    <path d="M176 109h18v116h-18z" fill="#050708"/>
+  </g>
+  <text x="410" y="280" font-family="Arial Black, Impact, Helvetica, sans-serif" font-size="118" letter-spacing="7" fill="#050708">MURRAY</text>
+  <text x="414" y="390" font-family="Arial, Helvetica, sans-serif" font-size="58" letter-spacing="14" fill="#050708">DISC JOCKEYS</text>
+  <rect x="410" y="430" width="410" height="8" rx="4" fill="#ff2b2f"/>
+</svg>
