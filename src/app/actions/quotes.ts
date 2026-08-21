@@ -69,6 +69,28 @@ export async function changeQuoteStatus(quoteId: string, status: QuoteStatus) {
   revalidatePath(`/presupuestos/${quoteId}`);
 }
 
+export async function registerProposalSent(quoteId: string) {
+  const actor = await requireManagement();
+  await prisma.$transaction(async tx => {
+    const quote = await tx.quote.findUniqueOrThrow({ where: { id: quoteId } });
+    if (quote.status === QuoteStatus.CANCELADO) throw new Error("No se puede enviar una propuesta cancelada");
+    if (quote.status === QuoteStatus.CONSULTA) {
+      await tx.quote.update({ where: { id: quoteId }, data: { status: QuoteStatus.PRESUPUESTO_ENVIADO } });
+    }
+    await audit(tx, {
+      userId: actor.id,
+      action: "PROPOSAL_SHARED",
+      entity: "Quote",
+      entityId: quoteId,
+      previousValue: { status: quote.status },
+      newValue: { status: quote.status === QuoteStatus.CONSULTA ? QuoteStatus.PRESUPUESTO_ENVIADO : quote.status },
+      operationId: randomUUID(),
+    });
+  });
+  revalidatePath(`/presupuestos/${quoteId}`);
+  revalidatePath("/presupuestos");
+}
+
 export async function confirmQuote(quoteId: string, versionId: string, setupTime?: string) {
   const actor = await requireManagement();
   const event = await prisma.$transaction(async tx => {
