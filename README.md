@@ -6,7 +6,7 @@ Aplicación web full-stack para operación comercial, eventos, personal, pagos, 
 
 - Node.js 20 o superior
 - pnpm
-- PostgreSQL 15 o superior, o Docker
+- PostgreSQL 15 o superior, o Docker 
 
 En macOS sin Docker, el proyecto incluye una distribución PostgreSQL real y portable para desarrollo.
 
