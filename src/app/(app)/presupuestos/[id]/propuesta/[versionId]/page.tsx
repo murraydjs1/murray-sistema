@@ -17,12 +17,12 @@ const included = [
 ] as const;
 
 const premiumIncluded = [
-  ["DJ del equipo Murray", "Música y operación profesional durante todo el evento."],
-  ["Sonido para 200 personas", "Sistema biamplificado, potente y nítido."],
-  ["Truss aéreo de 6 m", "Montado sobre la estructura de la carpa."],
-  ["4 cabezales Beam 9R", "Movimiento y profundidad para una pista con presencia."],
-  ["8 luces de pista", "Iluminación dinámica para acompañar cada momento."],
-  ["4 bolas espejadas", "Un clásico que transforma la pista."],
+  ["DJ del equipo Murray DJs", "Música para acompañar cada momento de la fiesta."],
+  ["Sonido biamplificado", "Cobertura profesional para hasta 200 personas."],
+  ["Truss aéreo de 6 metros", "Estructura colgada de la carpa para jerarquizar la pista."],
+  ["4 cabezales móviles Beam 9R", "Efectos de movimiento y profundidad sobre la pista."],
+  ["8 protones de iluminación", "Iluminación dinámica diseñada para la pista de baile."],
+  ["4 bolas espejadas de 50 cm", "Ambientación clásica para una pista con presencia."],
 ] as const;
 
 export default async function ProposalPage({ params }: { params: Promise<{ id: string; versionId: string }> }) {
@@ -74,7 +74,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
       <section className="proposal-hero">
         <div className="eyebrow">{isPremium ? "PRODUCCIÓN PREMIUM" : "PRODUCCIÓN TÉCNICA PARA TU EVENTO"}</div>
-        <h1>{isPremium ? "Una pista con presencia" : `${quote.eventType.name} · Producción técnica`}</h1>
+        <h1>{isPremium ? "Producción Premium para hasta 200 personas" : `${quote.eventType.name} · Producción técnica`}</h1>
+        {isPremium && <p className="proposal-hero-copy">Una pista con presencia, sonido e iluminación para hacer que la fiesta se sienta distinta.</p>}
         <span className="proposal-number">{quote.number} · Versión {version.versionNumber}</span>
       </section>
 
@@ -88,7 +89,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       </section>
 
       {packageIncluded && <section className="proposal-section">
-        <div className="proposal-section-heading"><h2>{isPremium ? "Todo lo que incluye" : "Alcance de la producción"}</h2><p>{isPremium ? "Una producción integral pensada para una gran fiesta en casa." : "Todo listo para una pista con presencia, sonido e iluminación profesional."}</p></div>
+        <div className="proposal-section-heading"><h2>{isPremium ? "Qué incluye tu Producción Premium" : "Alcance de la producción"}</h2><p>{isPremium ? "Esta es la producción técnica completa incluida en el valor de esta propuesta." : "Todo listo para una pista con presencia, sonido e iluminación profesional."}</p></div>
         <div className={isPremium ? "proposal-feature-grid" : "proposal-included"}>{(isPremium ? premiumIncluded : included).map(([title, description]) => <div key={title}><i /><strong>{title}</strong><span>{description}</span></div>)}</div>
       </section>}
 
