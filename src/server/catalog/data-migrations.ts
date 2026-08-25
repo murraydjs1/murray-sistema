@@ -43,6 +43,11 @@ const migrations = [{
     await tx.quoteProposalOption.updateMany({ where: { quoteVersionId: version.id, code: "dj-micky-2h" }, data: { description: "DJ Set de Micky Murray durante 2 horas." } });
     await tx.quoteProposalOption.updateMany({ where: { quoteVersionId: version.id, code: "dj-micky-4h" }, data: { description: "DJ Set de Micky Murray durante 4 horas." } });
   },
+}, {
+  key: "2026-08-25-premium-led-dj-booth-option",
+  async apply(tx: Prisma.TransactionClient) {
+    for (const addOn of premium200AddOns) await upsertAddOn(tx, addOn);
+  },
 }] as const;
 
 export async function applyDataMigrations(prisma: PrismaClient) {
