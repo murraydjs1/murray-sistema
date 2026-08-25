@@ -97,11 +97,6 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
         <div className="proposal-lines">{version.items.map(item => <div key={item.id}><div><strong>{isPremium && (item.service?.code === premium200Service.code || item.description === premium200Service.description) ? "Producción Premium · hasta 200 personas" : item.description}</strong><span>{String(item.quantity)} × {formatMoney(String(item.listUnitPrice), version.currency)}</span></div><b>{formatMoney(String(item.finalAmount), version.currency)}</b></div>)}</div>
       </section>
 
-      {isPremium && availablePremiumAddOns.length > 0 && <section className="proposal-section proposal-options">
-        <div className="proposal-section-heading"><h2>Opcionales para potenciar la fiesta</h2><p>Podemos sumarlos a esta producción si querés llevar la experiencia un paso más allá.</p></div>
-        <div className="proposal-option-grid">{availablePremiumAddOns.map(addOn => <div key={addOn.code}><strong>{addOn.name}</strong><span>{addOn.description}</span><b>{formatMoney(addOn.listPrice, addOn.currency)}</b></div>)}</div>
-      </section>}
-
       <section className="proposal-total-card">
         <div><span>Total de la producción</span><strong>{formatMoney(String(version.totalFinal), version.currency)}</strong>{Number(version.taxRate) > 0 && <small>Incluye {version.taxName || "IVA"} {Number(version.taxRate)}%</small>}</div>
         <div className="proposal-total-breakdown"><span>Reserva {Number(version.depositPercentage)}%</span><b>{formatMoney(String(version.depositAmount), version.currency)}</b><span>Saldo</span><b>{formatMoney(String(version.balance), version.currency)}</b></div>
@@ -112,6 +107,12 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
         <p>La reserva se formaliza con el pago de la seña. El saldo se abona 24 h antes del evento. La propuesta tiene vigencia de 7 días.</p>
         {version.notes && <p><strong>Observaciones:</strong> {version.notes}</p>}
       </section>
+
+      {isPremium && availablePremiumAddOns.length > 0 && <section className="proposal-section proposal-options">
+        <div className="proposal-options-kicker">OPCIONALES DISPONIBLES</div>
+        <div className="proposal-section-heading"><h2>Potenciá tu fiesta</h2><p>Estos adicionales no están incluidos en el total de esta propuesta. Elegí los que más te gusten y te enviamos una versión actualizada.</p></div>
+        <div className="proposal-option-grid">{availablePremiumAddOns.map(addOn => <div key={addOn.code}><strong>{addOn.name}</strong><span>{addOn.description}</span><b>{formatMoney(addOn.listPrice, addOn.currency)}</b></div>)}</div>
+      </section>}
 
       <footer className="proposal-footer"><span>MURRAY DISC JOCKEYS</span><span>Propuesta {quote.number}</span></footer>
     </article>
