@@ -262,6 +262,7 @@ model EventType {
 
 model Service {
   id String @id @default(uuid()) @db.Uuid
+  code String? @unique
   name String
   category String
   description String?
@@ -276,6 +277,7 @@ model Service {
 
 model AddOn {
   id String @id @default(uuid()) @db.Uuid
+  code String? @unique
   name String
   category String
   description String?
@@ -296,6 +298,12 @@ model TaxRate {
   validFrom DateTime? @db.Date
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model DataMigration {
+  id String @id @default(uuid()) @db.Uuid
+  key String @unique
+  appliedAt DateTime @default(now())
 }
 
 model Quote {

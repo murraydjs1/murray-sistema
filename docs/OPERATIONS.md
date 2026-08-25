@@ -16,7 +16,15 @@ La contraseña demo es solo desarrollo. La app abre en `http://127.0.0.1:3000`.
 
 Copiar `.env.example` a `.env`. Variables obligatorias: `DATABASE_URL`, `AUTH_SECRET` y `APP_URL`. Supabase es opcional; la clave service role solo puede consumirse en servidor. Nunca copiar valores reales a documentación, commits, logs del navegador ni variables `NEXT_PUBLIC_*`.
 
-## Migraciones
+## Releases de producción
+
+Todo deploy de Vercel ejecuta `pnpm db:release` antes del build. El comando valida la conexión PostgreSQL, aplica migraciones de esquema y aplica migraciones de datos una única vez. Si falla, Vercel no publica el deploy.
+
+Cada dato operativo fijo —por ejemplo un paquete comercial o adicional estándar— se agrega como una migración en `src/server/catalog/data-migrations.ts`, con una clave única registrada en `DataMigration`. No se usa el seed general como paso de despliegue, porque puede sincronizar datos de referencia más amplios.
+
+Antes de habilitar un release, `DATABASE_URL` de Vercel debe ser una URL PostgreSQL completa (`postgresql://` o `postgres://`). Nunca pegarla en documentación, Git o el chat.
+
+## Desarrollo y migraciones locales
 
 ```bash
 pnpm prisma validate

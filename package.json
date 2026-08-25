@@ -16,6 +16,9 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:preflight": "tsx scripts/db-preflight.ts",
+    "db:data-migrate": "tsx scripts/data-migrate.ts",
+    "db:release": "prisma generate && pnpm db:preflight && prisma migrate deploy && pnpm db:data-migrate",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "db:local": "tsx scripts/dev-postgres.ts"
   },

@@ -1,5 +1,6 @@
 import { PrismaClient, Currency, StaffRole, UserRole } from "@prisma/client";
 import argon2 from "argon2";
+import { premium200AddOns, premium200Service } from "../src/lib/catalog/premium-200";
 const db = new PrismaClient();
 
 async function main() {
@@ -19,19 +20,19 @@ async function main() {
   const services = [
     ["Producción técnica", "Técnica", 2000000], ["Servicio DJ Murray DJs", "DJ", 1200000],
     ["DJ Micky 2 horas", "DJ", 2000000], ["DJ Micky 4 horas", "DJ", 3000000],
-    ["Producción premium para carpa · hasta 200 personas", "Producción premium", 3250000],
   ] as const;
-  const descriptions: Record<string, string> = {
-    "Producción premium para carpa · hasta 200 personas": "Servicio básico con DJ del equipo Murray DJs, estructura truss de 6 m colgada de la estructura de la carpa, 4 cabezales beam 9R, 8 protones de iluminación de pista, 4 bolas espejadas de 50 cm y sonido biamplificado para hasta 200 personas.",
-  };
-  for (const [name, category, listPrice] of services) { const existing=await db.service.findFirst({where:{name}}); const description=descriptions[name]||null; if(existing) await db.service.update({where:{id:existing.id},data:{category,description,listPrice,currency:Currency.ARS,active:true}}); else await db.service.create({ data: { name, category, description, listPrice, currency: Currency.ARS } }); }
+  for (const [name, category, listPrice] of services) { const existing=await db.service.findFirst({where:{name}}); if(existing) await db.service.update({where:{id:existing.id},data:{category,listPrice,currency:Currency.ARS,active:true}}); else await db.service.create({ data: { name, category, listPrice, currency: Currency.ARS } }); }
   const addOns = [
-    ["Cabina DJ pantalla LED", "Producción", 2500000, null], ["10 protones adicionales", "Producción", 250000, null], ["Bola espejada", "Producción", 150000, null], ["CO2 2 tubos", "Producción", 1250000, null], ["CO2 4 tubos", "Producción", 1750000, null], ["Papelitos", "Producción", 650000, null], ["Combo Papelitos + CO2", "Producción", 1500000, null], ["Grupo electrógeno", "Producción", 250000, null],
-    ["16 protones · iluminación perimetral y barra en ámbar", "Iluminación", 400000, "16 protones de iluminación perimetral decorativa y de barra de tragos en ámbar."], ["18 pines · iluminación puntual para livings o mesas", "Iluminación", 250000, "18 pines de iluminación puntual para livings o mesas."],
-    ["Mesa truss para DJ", "Cabina DJ", 400000, "Mesa truss para DJ."], ["Tarima 4 × 2 m para DJ", "Cabina DJ", 800000, "Tarima de 4 × 2 m para DJ."], ["Back de cabina DJ · tótems, stormers y beams", "Cabina DJ", 800000, "Back de cabina de DJ con 4 tótems, 8 stormers y 4 cabezales móviles beam."],
+    ["Cabina DJ pantalla LED", "Producción", 2500000, null], ["10 protones adicionales", "Producción", 250000, null], ["Bola espejada", "Producción", 150000, null], ["CO2 2 tubos", "Producción", 1250000, null], ["CO2 4 tubos", "Producción", 1750000, null], ["Papelitos", "Producción", 650000, null], ["Grupo electrógeno", "Producción", 250000, null],
   ] as const;
   for (const [name, category, listPrice, description] of addOns) {
     const existing=await db.addOn.findFirst({where:{name}}); if(existing) await db.addOn.update({where:{id:existing.id},data:{category,description,listPrice,currency:Currency.ARS,active:true}}); else await db.addOn.create({ data: { name, category, description, listPrice, currency: Currency.ARS } });
+  }
+  const premiumService = await db.service.findFirst({ where: { OR: [{ code: premium200Service.code }, { name: premium200Service.name }] } });
+  if (premiumService) await db.service.update({ where: { id: premiumService.id }, data: { ...premium200Service, active: true } }); else await db.service.create({ data: { ...premium200Service, active: true } });
+  for (const addOn of premium200AddOns) {
+    const existing = await db.addOn.findFirst({ where: { OR: [{ code: addOn.code }, { name: addOn.name }] } });
+    if (existing) await db.addOn.update({ where: { id: existing.id }, data: { ...addOn, active: true } }); else await db.addOn.create({ data: { ...addOn, active: true } });
   }
   if (process.env.SEED_DEMO_USERS === "true") {
     const demoPassword = process.env.SEED_DEMO_PASSWORD;
