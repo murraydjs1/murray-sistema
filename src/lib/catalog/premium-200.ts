@@ -10,10 +10,10 @@ export const premium200Service = {
 export const premium200AddOns = [
   { code: "iluminacion-perimetral-ambar-16", name: "16 protones · iluminación perimetral y barra en ámbar", category: "Iluminación", description: "16 protones de iluminación perimetral decorativa y de barra de tragos en ámbar.", listPrice: "400000", currency: "ARS" as const },
   { code: "iluminacion-puntual-pines-18", name: "18 pines · iluminación puntual para livings o mesas", category: "Iluminación", description: "18 pines de iluminación puntual para livings o mesas.", listPrice: "250000", currency: "ARS" as const },
-  { code: "papelitos-co2", name: "Combo Papelitos + CO2", category: "Producción", description: "Combo Papelitos + CO2.", listPrice: "1500000", currency: "ARS" as const },
+  { code: "papelitos-co2", name: "Combo Papelitos + CO2", category: "Producción", description: "Combo Papelitos + CO2.", listPrice: "1600000", currency: "ARS" as const },
   { code: "cabina-mesa-truss", name: "Mesa truss para DJ", category: "Cabina DJ", description: "Mesa truss para DJ.", listPrice: "400000", currency: "ARS" as const },
   { code: "cabina-tarima-4x2", name: "Tarima 4 × 2 m para DJ", category: "Cabina DJ", description: "Tarima de 4 × 2 m para DJ.", listPrice: "800000", currency: "ARS" as const },
   { code: "cabina-back-totems-stormers-beams", name: "Back de cabina DJ · tótems, stormers y beams", category: "Cabina DJ", description: "Back de cabina de DJ con 4 tótems, 8 stormers y 4 cabezales móviles beam.", listPrice: "800000", currency: "ARS" as const },
-  { code: "dj-micky-2h", name: "DJ Micky · set de 2 horas", category: "DJ", description: "Set de DJ Micky de 2 horas.", listPrice: "2000000", currency: "ARS" as const },
-  { code: "dj-micky-4h", name: "DJ Micky · set de 4 horas", category: "DJ", description: "Set de DJ Micky de 4 horas.", listPrice: "3000000", currency: "ARS" as const },
+  { code: "dj-micky-2h", name: "DJ Set Micky Murray · 2 horas", category: "DJ", description: "DJ Set de Micky Murray durante 2 horas.", listPrice: "2000000", currency: "ARS" as const },
+  { code: "dj-micky-4h", name: "DJ Set Micky Murray · 4 horas", category: "DJ", description: "DJ Set de Micky Murray durante 4 horas.", listPrice: "3000000", currency: "ARS" as const },
 ] as const;

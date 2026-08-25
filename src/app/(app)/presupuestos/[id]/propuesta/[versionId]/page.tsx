@@ -113,7 +113,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       {isPremium && proposalOptions.length > 0 && <section className="proposal-section proposal-options">
         <div className="proposal-options-kicker">OPCIONALES DISPONIBLES</div>
         <div className="proposal-section-heading"><h2>Potenciá tu fiesta</h2><p>Estos adicionales no están incluidos en el total de esta propuesta. Elegí los que más te gusten y te enviamos una versión actualizada.</p></div>
-        <div className="proposal-option-grid">{proposalOptions.map(addOn => <div key={addOn.code}><strong>{"name" in addOn ? addOn.name : addOn.code === "dj-micky-2h" ? "DJ Micky · set de 2 horas" : "DJ Micky · set de 4 horas"}</strong><span>{addOn.description}</span><b>{formatMoney(String(addOn.listPrice), addOn.currency)}</b></div>)}</div>
+        <div className="proposal-option-grid">{proposalOptions.map(addOn => <div key={addOn.code}><strong>{"name" in addOn ? addOn.name : addOn.code === "dj-micky-2h" ? "DJ Set Micky Murray · 2 horas" : "DJ Set Micky Murray · 4 horas"}</strong><span>{addOn.description}</span><b>{formatMoney(String(addOn.listPrice), addOn.currency)}</b></div>)}</div>
       </section>}
 
       <footer className="proposal-footer"><span>MURRAY DISC JOCKEYS</span><span>Propuesta {quote.number}</span></footer>
