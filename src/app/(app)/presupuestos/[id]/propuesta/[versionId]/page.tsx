@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ProposalPrintActions } from "@/components/quotes/proposal-actions";
 import { buildProposalWhatsappMessage } from "@/lib/quotes/proposal";
 import { formatMoney } from "@/lib/money/format";
+import { premium200AddOns, premium200Service } from "@/lib/catalog/premium-200";
 import { requireManagement } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
@@ -15,6 +16,15 @@ const included = [
   ["Operación", "DJ del equipo Murray, operador de iluminación, armado, desarmado y fletes incluidos."],
 ] as const;
 
+const premiumIncluded = [
+  ["DJ del equipo Murray", "Música y operación profesional durante todo el evento."],
+  ["Sonido para 200 personas", "Sistema biamplificado, potente y nítido."],
+  ["Truss aéreo de 6 m", "Montado sobre la estructura de la carpa."],
+  ["4 cabezales Beam 9R", "Movimiento y profundidad para una pista con presencia."],
+  ["8 luces de pista", "Iluminación dinámica para acompañar cada momento."],
+  ["4 bolas espejadas", "Un clásico que transforma la pista."],
+] as const;
+
 export default async function ProposalPage({ params }: { params: Promise<{ id: string; versionId: string }> }) {
   await requireManagement();
   const { id, versionId } = await params;
@@ -23,7 +33,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     include: {
       client: true,
       eventType: true,
-      versions: { where: { id: versionId }, include: { items: { orderBy: { sortOrder: "asc" } } } },
+      versions: { where: { id: versionId }, include: { items: { orderBy: { sortOrder: "asc" }, include: { service: { select: { code: true } }, addOn: { select: { code: true } } } } } },
     },
   });
   const version = quote?.versions[0];
@@ -45,7 +55,10 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     currency: version.currency,
   });
   const date = quote.eventDate.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
+  const isPremium = version.items.some(item => item.service?.code === premium200Service.code || item.description === premium200Service.description);
   const packageIncluded = version.items.some(item => item.serviceId && item.description.toLowerCase().includes("producción"));
+  const includedAddOns = version.items.filter(item => item.addOnId);
+  const availablePremiumAddOns = premium200AddOns.filter(addOn => !includedAddOns.some(item => item.addOn?.code === addOn.code));
 
   return <div className="proposal-document">
     <div className="proposal-toolbar" data-print-hide>
@@ -60,8 +73,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       </header>
 
       <section className="proposal-hero">
-        <div className="eyebrow">PRODUCCIÓN PARA FIESTAS DE 50</div>
-        <h1>{quote.eventType.name} · Producción técnica</h1>
+        <div className="eyebrow">{isPremium ? "PRODUCCIÓN PREMIUM" : "PRODUCCIÓN TÉCNICA PARA TU EVENTO"}</div>
+        <h1>{isPremium ? "Una pista con presencia" : `${quote.eventType.name} · Producción técnica`}</h1>
         <span className="proposal-number">{quote.number} · Versión {version.versionNumber}</span>
       </section>
 
@@ -75,14 +88,19 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       </section>
 
       {packageIncluded && <section className="proposal-section">
-        <div className="proposal-section-heading"><h2>Alcance de la producción</h2><p>Todo listo para una pista con presencia, sonido e iluminación profesional.</p></div>
-        <div className="proposal-included">{included.map(([title, description]) => <div key={title}><i /><strong>{title}</strong><span>{description}</span></div>)}</div>
+        <div className="proposal-section-heading"><h2>{isPremium ? "Todo lo que incluye" : "Alcance de la producción"}</h2><p>{isPremium ? "Una producción integral pensada para una gran fiesta en casa." : "Todo listo para una pista con presencia, sonido e iluminación profesional."}</p></div>
+        <div className={isPremium ? "proposal-feature-grid" : "proposal-included"}>{(isPremium ? premiumIncluded : included).map(([title, description]) => <div key={title}><i /><strong>{title}</strong><span>{description}</span></div>)}</div>
       </section>}
 
       <section className="proposal-section">
-        <div className="proposal-section-heading"><h2>Detalle de la propuesta</h2><p>Valores correspondientes a esta versión comercial.</p></div>
-        <div className="proposal-lines">{version.items.map(item => <div key={item.id}><div><strong>{item.description}</strong><span>{String(item.quantity)} × {formatMoney(String(item.listUnitPrice), version.currency)}</span></div><b>{formatMoney(String(item.finalAmount), version.currency)}</b></div>)}</div>
+        <div className="proposal-section-heading"><h2>Inversión</h2><p>Valores correspondientes a esta versión comercial.</p></div>
+        <div className="proposal-lines">{version.items.map(item => <div key={item.id}><div><strong>{isPremium && (item.service?.code === premium200Service.code || item.description === premium200Service.description) ? "Producción Premium · hasta 200 personas" : item.description}</strong><span>{String(item.quantity)} × {formatMoney(String(item.listUnitPrice), version.currency)}</span></div><b>{formatMoney(String(item.finalAmount), version.currency)}</b></div>)}</div>
       </section>
+
+      {isPremium && availablePremiumAddOns.length > 0 && <section className="proposal-section proposal-options">
+        <div className="proposal-section-heading"><h2>Opcionales para potenciar la fiesta</h2><p>Podemos sumarlos a esta producción si querés llevar la experiencia un paso más allá.</p></div>
+        <div className="proposal-option-grid">{availablePremiumAddOns.map(addOn => <div key={addOn.code}><strong>{addOn.name}</strong><span>{addOn.description}</span><b>{formatMoney(addOn.listPrice, addOn.currency)}</b></div>)}</div>
+      </section>}
 
       <section className="proposal-total-card">
         <div><span>Total de la producción</span><strong>{formatMoney(String(version.totalFinal), version.currency)}</strong>{Number(version.taxRate) > 0 && <small>Incluye {version.taxName || "IVA"} {Number(version.taxRate)}%</small>}</div>
