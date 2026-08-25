@@ -106,6 +106,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       <section className="proposal-terms">
         <h2>Reserva y condiciones</h2>
         <p>La reserva se formaliza con el pago de la seña. El saldo se abona 24 h antes del evento. La propuesta tiene vigencia de 7 días.</p>
+        <p><strong>Importante:</strong> los valores indicados no incluyen IVA. El saldo pendiente se actualizará conforme a la variación del IPC.</p>
         {version.notes && <p><strong>Observaciones:</strong> {version.notes}</p>}
       </section>
 

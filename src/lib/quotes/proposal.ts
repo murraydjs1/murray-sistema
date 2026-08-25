@@ -39,6 +39,7 @@ export function buildProposalWhatsappMessage(input: ProposalMessageInput) {
     `Saldo: ${formatMoney(input.balance, input.currency)}`,
     "",
     "La reserva se formaliza con la seña. El saldo se abona 24 h antes del evento.",
+    "Los valores indicados no incluyen IVA. El saldo pendiente se actualizará conforme a la variación del IPC.",
     "La propuesta tiene vigencia de 7 días.",
     "",
     "Te enviamos el PDF con el detalle de la producción y los opcionales disponibles.",
