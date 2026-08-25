@@ -21,6 +21,15 @@ const migrations = [{
     await upsertService(tx, premium200Service);
     for (const addOn of premium200AddOns) await upsertAddOn(tx, addOn);
   },
+}, {
+  key: "2026-08-25-micky-special-proposal-options",
+  async apply(tx: Prisma.TransactionClient) {
+    for (const addOn of premium200AddOns) await upsertAddOn(tx, addOn);
+    const version = await tx.quoteVersion.findFirst({ where: { quote: { number: "PRE-2026-0006" }, versionNumber: 1 } });
+    if (!version) return;
+    await tx.quoteProposalOption.upsert({ where: { quoteVersionId_code: { quoteVersionId: version.id, code: "dj-micky-2h" } }, update: { description: "Set de DJ Micky de 2 horas.", listPrice: "1500000", currency: "ARS", sortOrder: 90 }, create: { quoteVersionId: version.id, code: "dj-micky-2h", description: "Set de DJ Micky de 2 horas.", listPrice: "1500000", currency: "ARS", sortOrder: 90 } });
+    await tx.quoteProposalOption.upsert({ where: { quoteVersionId_code: { quoteVersionId: version.id, code: "dj-micky-4h" } }, update: { description: "Set de DJ Micky de 4 horas.", listPrice: "2500000", currency: "ARS", sortOrder: 91 }, create: { quoteVersionId: version.id, code: "dj-micky-4h", description: "Set de DJ Micky de 4 horas.", listPrice: "2500000", currency: "ARS", sortOrder: 91 } });
+  },
 }] as const;
 
 export async function applyDataMigrations(prisma: PrismaClient) {

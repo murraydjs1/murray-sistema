@@ -363,10 +363,24 @@ model QuoteVersion {
   confirmedForQuote Quote? @relation("ConfirmedVersion")
   createdBy User @relation("VersionCreator", fields: [createdById], references: [id])
   items QuoteItem[]
+  proposalOptions QuoteProposalOption[]
   sourceEvent Event? @relation("SourceVersion")
   clientPayments ClientPayment[]
   @@unique([quoteId, versionNumber])
   @@index([quoteId, createdAt])
+}
+
+model QuoteProposalOption {
+  id String @id @default(uuid()) @db.Uuid
+  quoteVersionId String @db.Uuid
+  code String
+  description String
+  listPrice Decimal @db.Decimal(18,2)
+  currency Currency
+  sortOrder Int @default(0)
+  quoteVersion QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Cascade)
+  @@unique([quoteVersionId, code])
+  @@index([quoteVersionId, sortOrder])
 }
 
 model QuoteItem {
