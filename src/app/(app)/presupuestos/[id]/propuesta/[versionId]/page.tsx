@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ProposalPrintActions } from "@/components/quotes/proposal-actions";
 import { buildProposalWhatsappMessage } from "@/lib/quotes/proposal";
 import { formatMoney } from "@/lib/money/format";
-import { premium200AddOns, premium200Service } from "@/lib/catalog/premium-200";
+import { premium200Service } from "@/lib/catalog/premium-200";
 import { requireManagement } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
@@ -28,14 +28,17 @@ const premiumIncluded = [
 export default async function ProposalPage({ params }: { params: Promise<{ id: string; versionId: string }> }) {
   await requireManagement();
   const { id, versionId } = await params;
-  const quote = await prisma.quote.findUnique({
-    where: { id },
-    include: {
-      client: true,
-      eventType: true,
-      versions: { where: { id: versionId }, include: { items: { orderBy: { sortOrder: "asc" }, include: { service: { select: { code: true } }, addOn: { select: { code: true } } } }, proposalOptions: { orderBy: { sortOrder: "asc" } } } },
-    },
-  });
+  const [quote, catalogAddOns] = await Promise.all([
+    prisma.quote.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        eventType: true,
+        versions: { where: { id: versionId }, include: { items: { orderBy: { sortOrder: "asc" }, include: { service: { select: { code: true } }, addOn: { select: { code: true } } } }, proposalOptions: { orderBy: { sortOrder: "asc" } } } },
+      },
+    }),
+    prisma.addOn.findMany({ where: { active: true }, orderBy: [{ category: "asc" }, { name: "asc" }] }),
+  ]);
   const version = quote?.versions[0];
   if (!quote || !version) notFound();
 
@@ -56,9 +59,9 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   const date = quote.eventDate.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
   const isPremium = version.items.some(item => item.service?.code === premium200Service.code || item.description === premium200Service.description);
   const packageIncluded = isPremium || version.items.some(item => item.serviceId && item.description.toLowerCase().includes("producción"));
-  const includedAddOns = version.items.filter(item => item.addOnId);
-  const availablePremiumAddOns = premium200AddOns.filter(addOn => !includedAddOns.some(item => item.addOn?.code === addOn.code) && !version.proposalOptions.some(option => option.code === addOn.code));
-  const proposalOptions = [...availablePremiumAddOns, ...version.proposalOptions];
+  const includedAddOnIds = new Set(version.items.flatMap(item => item.addOnId ? [item.addOnId] : []));
+  const availableCatalogAddOns = catalogAddOns.filter(addOn => !includedAddOnIds.has(addOn.id) && !version.proposalOptions.some(option => option.code === addOn.code));
+  const proposalOptions = [...availableCatalogAddOns, ...version.proposalOptions.map(option => ({ ...option, name: option.code === "dj-micky-2h" ? "DJ Set Micky Murray · 2 horas" : "DJ Set Micky Murray · 4 horas" }))];
 
   return <div className="proposal-document">
     <div className="proposal-toolbar" data-print-hide>
@@ -110,10 +113,10 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
         {version.notes && <p><strong>Observaciones:</strong> {version.notes}</p>}
       </section>
 
-      {isPremium && proposalOptions.length > 0 && <section className="proposal-section proposal-options">
+      {proposalOptions.length > 0 && <section className="proposal-section proposal-options">
         <div className="proposal-options-kicker">OPCIONALES DISPONIBLES</div>
         <div className="proposal-section-heading"><h2>Potenciá tu fiesta</h2><p>Estos adicionales no están incluidos en el total de esta propuesta. Elegí los que más te gusten y te enviamos una versión actualizada.</p></div>
-        <div className="proposal-option-grid">{proposalOptions.map(addOn => <div key={addOn.code}><strong>{"name" in addOn ? addOn.name : addOn.code === "dj-micky-2h" ? "DJ Set Micky Murray · 2 horas" : "DJ Set Micky Murray · 4 horas"}</strong><span>{addOn.description}</span><b>{formatMoney(String(addOn.listPrice), addOn.currency)}</b></div>)}</div>
+        <div className="proposal-option-grid">{proposalOptions.map(addOn => <div key={addOn.code}><strong>{addOn.name}</strong><span>{addOn.description}</span><b>{formatMoney(String(addOn.listPrice), addOn.currency)}</b></div>)}</div>
       </section>}
 
       <footer className="proposal-footer"><span>MURRAY DISC JOCKEYS</span><span>Propuesta {quote.number}</span></footer>
