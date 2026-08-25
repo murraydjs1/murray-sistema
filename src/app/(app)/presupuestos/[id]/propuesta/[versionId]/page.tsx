@@ -56,7 +56,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
   });
   const date = quote.eventDate.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
   const isPremium = version.items.some(item => item.service?.code === premium200Service.code || item.description === premium200Service.description);
-  const packageIncluded = version.items.some(item => item.serviceId && item.description.toLowerCase().includes("producción"));
+  const packageIncluded = isPremium || version.items.some(item => item.serviceId && item.description.toLowerCase().includes("producción"));
   const includedAddOns = version.items.filter(item => item.addOnId);
   const availablePremiumAddOns = premium200AddOns.filter(addOn => !includedAddOns.some(item => item.addOn?.code === addOn.code));
 
