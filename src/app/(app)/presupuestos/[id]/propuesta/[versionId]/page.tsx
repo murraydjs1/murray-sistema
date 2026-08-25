@@ -51,7 +51,6 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
     total: String(version.totalFinal),
     depositPercentage: String(version.depositPercentage),
     depositAmount: String(version.depositAmount),
-    balance: String(version.balance),
     currency: version.currency,
   });
   const date = quote.eventDate.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" });
@@ -100,13 +99,13 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
       <section className="proposal-total-card">
         <div><span>Total de la producción</span><strong>{formatMoney(String(version.totalFinal), version.currency)}</strong>{Number(version.taxRate) > 0 && <small>Incluye {version.taxName || "IVA"} {Number(version.taxRate)}%</small>}</div>
-        <div className="proposal-total-breakdown"><span>Reserva {Number(version.depositPercentage)}%</span><b>{formatMoney(String(version.depositAmount), version.currency)}</b><span>Saldo</span><b>{formatMoney(String(version.balance), version.currency)}</b></div>
+        <div className="proposal-total-breakdown"><span>Reserva {Number(version.depositPercentage)}%</span><b>{formatMoney(String(version.depositAmount), version.currency)}</b></div>
       </section>
 
       <section className="proposal-terms">
         <h2>Reserva y condiciones</h2>
-        <p>La reserva se formaliza con el pago de la seña. El saldo se abona 24 h antes del evento. La propuesta tiene vigencia de 7 días.</p>
-        <p><strong>Importante:</strong> los valores indicados no incluyen IVA. El saldo pendiente se actualizará conforme a la variación del IPC.</p>
+        <p>La reserva se formaliza con el pago de la seña. El importe restante se abona 24 h antes del evento. La propuesta tiene vigencia de 7 días.</p>
+        <p><strong>Importante:</strong> los valores indicados no incluyen IVA. El importe restante se actualizará conforme a la variación del IPC.</p>
         {version.notes && <p><strong>Observaciones:</strong> {version.notes}</p>}
       </section>
 
