@@ -695,7 +695,7 @@ model ClientPayment {
   eventId String? @db.Uuid
   quoteId String? @db.Uuid
   quoteVersionId String @db.Uuid
-  accountId String @db.Uuid
+  accountId String? @db.Uuid
   amount Decimal @db.Decimal(18,2)
   currency Currency
   paymentDate DateTime @db.Date
@@ -706,7 +706,7 @@ model ClientPayment {
   partnerName String?
   status PaymentStatus @default(ACTIVE)
   idempotencyKey String @unique @db.Uuid
-  treasuryTransactionId String @unique @db.Uuid
+  treasuryTransactionId String? @unique @db.Uuid
   createdById String @db.Uuid
   createdAt DateTime @default(now())
   voidedAt DateTime?
@@ -716,8 +716,8 @@ model ClientPayment {
   event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
   quote Quote? @relation(fields: [quoteId], references: [id], onDelete: Restrict)
   quoteVersion QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
-  account FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  treasuryTransaction TreasuryTransaction @relation("ClientPaymentTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
+  account FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  treasuryTransaction TreasuryTransaction? @relation("ClientPaymentTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
   createdBy User @relation("ClientPaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
   voidedBy User? @relation("ClientPaymentVoider", fields: [voidedById], references: [id], onDelete: Restrict)
   @@index([clientId, paymentDate])

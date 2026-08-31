@@ -13,7 +13,7 @@ const labels: Record<string, { section: string; title: string }> = {
   "/personal": { section: "Equipo", title: "Personal" },
   "/catalogo": { section: "Comercial", title: "Catálogo" },
   "/gastos": { section: "Finanzas", title: "Gastos" },
-  "/tesoreria": { section: "Finanzas", title: "Tesorería" },
+  "/tesoreria": { section: "Finanzas", title: "Finanzas operativas" },
   "/reportes/rentabilidad": { section: "Reportes", title: "Rentabilidad" },
   "/configuracion/importar-excel": { section: "Configuración", title: "Importar Excel" },
   "/usuarios": { section: "Configuración", title: "Usuarios" },

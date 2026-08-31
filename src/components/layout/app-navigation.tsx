@@ -27,7 +27,7 @@ const groups: NavGroup[] = [
   ] },
   { label: "Finanzas", items: [
     { href: "/gastos", label: "Gastos", icon: ReceiptText },
-    { href: "/tesoreria", label: "Tesorería", icon: Landmark },
+    { href: "/tesoreria", label: "Finanzas", icon: Landmark },
     { href: "/reportes/rentabilidad", label: "Rentabilidad", icon: BarChart3 },
   ] },
   { label: "Configuración", items: [
