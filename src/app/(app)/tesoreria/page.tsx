@@ -9,7 +9,7 @@ export default async function TreasuryPage() {
   await requireManagement();
   const summary = await operationalFinanceSummary();
   const pendingCollections = summary.rows.filter((row) => row.pendingCollection.gt(0));
-  const pendingPayments = summary.rows.flatMap((row) => row.staffPayables.filter((item) => item.pending.gt(0)).map((item) => ({ event: row.event, ...item })));
+  const pendingPayments = summary.rows.flatMap((row) => row.staffPayables.filter((item) => item.assignment.currency === row.currency && item.pending.gt(0)).map((item) => ({ event: row.event, ...item })));
 
   return <>
     <div className="topbar"><div><div className="eyebrow">Finanzas operativas</div><h1>Finanzas</h1><p className="muted">Cobros de clientes, pagos de equipo y resultado proyectado de cada evento.</p></div><div className="row"><Link className="btn btn-secondary" href="/tesoreria/por-cobrar">Cobros</Link><Link className="btn btn-primary" href="/tesoreria/por-pagar">Pagos</Link></div></div>
@@ -19,9 +19,9 @@ export default async function TreasuryPage() {
       <Metric href="/reportes/rentabilidad" label="Costos cargados" value={formatMoney(bucket.cost.toFixed(2), currency)} detail="Personal y gastos directos" />
       <Metric href="/reportes/rentabilidad" label="Resultado proyectado" value={formatMoney(bucket.projectedResult.toFixed(2), currency)} detail="Venta neta menos costos" accent />
     </div></section>; })}
-    <div className="finance-note">Los valores se muestran separados por moneda. El resultado es provisorio hasta cerrar las finanzas del evento.</div>
+    <div className="finance-note">Los valores se muestran separados por moneda. Los eventos importados conservan sus importes históricos de Excel; los nuevos se calculan con el detalle operativo cargado.</div>
     <section className="grid grid-2 finance-worklist">
-      <Worklist title="Cobros a seguir" href="/tesoreria/por-cobrar" empty="No hay saldos pendientes" items={pendingCollections.slice(0, 6).map((row) => ({ href: `/eventos/${row.event.id}`, title: `${row.event.number} · ${row.event.sourceQuote?.client.name}`, detail: `${row.event.eventDate.toLocaleDateString("es-AR", { timeZone: "UTC" })} · ${row.event.venue}`, value: formatMoney(row.pendingCollection.toFixed(2), row.version.currency) }))} />
+      <Worklist title="Cobros a seguir" href="/tesoreria/por-cobrar" empty="No hay saldos pendientes" items={pendingCollections.slice(0, 6).map((row) => ({ href: `/eventos/${row.event.id}`, title: `${row.event.number} · ${row.event.client.name}`, detail: `${row.event.eventDate.toLocaleDateString("es-AR", { timeZone: "UTC" })} · ${row.event.venue}`, value: formatMoney(row.pendingCollection.toFixed(2), row.currency) }))} />
       <Worklist title="Pagos a coordinar" href="/tesoreria/por-pagar" empty="No hay pagos pendientes" items={pendingPayments.slice(0, 6).map((row) => ({ href: `/eventos/${row.event.id}`, title: `${row.assignment.staff.name} · ${row.event.number}`, detail: `${row.assignment.assignmentType.replaceAll("_", " ")} · ${row.event.eventDate.toLocaleDateString("es-AR", { timeZone: "UTC" })}`, value: formatMoney(row.pending.toFixed(2), row.assignment.currency) }))} />
     </section>
   </>;
