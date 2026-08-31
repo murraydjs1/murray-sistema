@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {Currency,StaffRole} from "@prisma/client";
 import {prisma} from "@/server/db/prisma";
-import {requireManagement} from "@/server/auth/authorization";
+import {requireOperations} from "@/server/auth/authorization";
 import {formatMoney} from "@/lib/money/format";
 import {calculateStaffFinance} from "@/lib/staff/finance";
 import {monthRange} from "@/lib/dates/month";
@@ -9,7 +9,7 @@ import {createStaff} from "@/app/actions/staff";
 import {humanLabel} from "@/lib/ui/labels";
 
 export default async function Personal({searchParams}:{searchParams:Promise<{month?:string;currency?:string}>}){
-  await requireManagement();const p=await searchParams,period=monthRange(p.month),currency=Object.values(Currency).includes(p.currency as Currency)?p.currency as Currency:Currency.ARS;
+  await requireOperations();const p=await searchParams,period=monthRange(p.month),currency=Object.values(Currency).includes(p.currency as Currency)?p.currency as Currency:Currency.ARS;
   const staff=await prisma.staff.findMany({include:{eventAssignments:{where:{active:true,currency,event:{eventDate:{gte:period.start,lte:period.end}}},include:{event:true}},payments:{where:{status:"ACTIVE",currency}}},orderBy:{name:"asc"}});
   return <><div className="topbar"><div><h1>Personal</h1><p className="muted">Equipo, funciones y obligaciones del período.</p></div><Link className="btn btn-secondary" href="/personal/liquidaciones">Ver liquidaciones</Link></div><form method="get" className="toolbar staff-toolbar"><div className="field"><label htmlFor="staff-month">Mes</label><input id="staff-month" name="month" type="month" defaultValue={period.value}/></div><div className="field"><label htmlFor="staff-currency">Moneda</label><select id="staff-currency" name="currency" defaultValue={currency}><option>ARS</option><option>USD</option></select></div><button className="btn btn-secondary">Aplicar</button></form><div className="staff-table"><div className="staff-list-header"><span>Persona</span><span>Tarifa estándar</span><span>Eventos del mes</span><span>Pendiente</span><span /></div><div className="staff-list">{staff.map(s=>{const finance=calculateStaffFinance(s.eventAssignments.map(a=>({amount:String(a.agreedAmount),eventStatus:a.event.status})),s.payments.map(x=>({amount:String(x.amount),status:x.status,eventId:x.eventId})));const events=new Set(s.eventAssignments.map(a=>a.eventId)).size;return <Link href={`/personal/${s.id}`} className="card staff-row" key={s.id}><div className="user-summary"><span className="avatar" aria-hidden>{s.name.slice(0,1).toUpperCase()}</span><div><strong>{s.name}</strong><span className="muted">{humanLabel(s.defaultRole)}{!s.active?" · Inactivo":""}</span></div></div><div><small>Tarifa estándar</small><strong>{formatMoney(String(s.defaultEventRate),s.currency)}</strong></div><div><small>Eventos del mes</small><strong>{events}</strong></div><div><small>Pendiente</small><strong>{formatMoney(finance.pending.toFixed(2),currency)}</strong></div><span aria-hidden>→</span></Link>})}</div></div><details className="card create-panel"><summary>Crear personal</summary><form action={createStaff} className="form edit-panel"><StaffFields/><button className="btn btn-primary">Crear persona</button></form></details></>
 }

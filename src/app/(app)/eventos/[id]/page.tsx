@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { AssignmentType, EventStatus } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { formatMoney } from "@/lib/money/format";
 import { eventsOverlap } from "@/lib/staff/conflicts";
 import { calculateEventProfitability } from "@/lib/profitability/event-profitability";
@@ -20,7 +20,7 @@ import { LegacyEventEditor } from "@/components/import/legacy-event-editor";
 
 const civil=(e:{id:string;number:string;eventDate:Date;startTime:string;endTime:string;setupTime:string|null})=>({id:e.id,number:e.number,eventDate:e.eventDate.toISOString().slice(0,10),startTime:e.startTime,endTime:e.endTime,setupTime:e.setupTime});
 export default async function EventDetail({params}:{params:Promise<{id:string}>}){
- await requireManagement(); const {id}=await params;
+ await requireOperations(); const {id}=await params;
  const e=await prisma.event.findUnique({where:{id},include:{client:{include:{contacts:true}},eventType:true,sourceQuoteVersion:{include:{items:true}},sourceQuote:{include:{payments:{include:{account:true},orderBy:{paymentDate:"desc"}}}},legacyFinancialData:true,managerStaff:true,financialClosedBy:true,staffAssignments:{where:{active:true},include:{staff:true},orderBy:[{staff:{name:"asc"}},{assignmentType:"asc"}]},expenses:{include:{category:true,paidByStaff:true,quoteItem:true},orderBy:[{expenseDate:"desc"},{createdAt:"desc"}]}}});
  if(!e)notFound();const staff=await prisma.staff.findMany({where:{active:true},orderBy:{name:"asc"}});const eventTypes=await prisma.eventType.findMany({where:{active:true},orderBy:{name:"asc"}});if(!e.sourceQuote||!e.sourceQuoteVersion)return <><LegacyEvent event={e}/><LegacyEventEditor event={e} staff={staff} eventTypes={eventTypes}/><LegacyTeam event={e} staff={staff}/></>;const categories=await prisma.expenseCategory.findMany({where:{active:true,scope:{in:["EVENT","BOTH"]}},orderBy:[{sortOrder:"asc"},{name:"asc"}]});const accounts=await prisma.financialAccount.findMany({where:{active:true},orderBy:{name:"asc"}});assertQuotedEvent(e);
  const contact=e.client.contacts.find(c=>c.isPrimary)||e.client.contacts[0], locked=e.financialStatus==="CLOSED";

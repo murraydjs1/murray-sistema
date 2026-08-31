@@ -4,11 +4,11 @@ import { ClientSource, ClientType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { audit } from "@/server/audit/audit";
 
 export async function createClient(formData: FormData) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const name = String(formData.get("name") || "").trim();
   const type = String(formData.get("type")) as ClientType;
   if (!name || !Object.values(ClientType).includes(type)) throw new Error("Cliente inválido");
@@ -25,7 +25,7 @@ export async function createClient(formData: FormData) {
 }
 
 export async function addContact(clientId: string, formData: FormData) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const client = await prisma.client.findUniqueOrThrow({ where: { id: clientId }, include: { contacts: true } });
   if (client.type === "PARTICULAR" && client.contacts.length) throw new Error("Un cliente particular puede tener un solo contacto");
   const name = String(formData.get("name") || "").trim(); if (!name) throw new Error("Ingresá el nombre");
@@ -38,7 +38,7 @@ export async function addContact(clientId: string, formData: FormData) {
   revalidatePath(`/clientes/${clientId}`);
 }
 export async function updateClient(clientId: string, formData: FormData) {
-  const actor=await requireManagement();
+  const actor=await requireOperations();
   await prisma.$transaction(async tx=>{const previous=await tx.client.findUniqueOrThrow({where:{id:clientId}});const next=await tx.client.update({where:{id:clientId},data:{name:String(formData.get("name")||"").trim(),phone:str(formData,"phone"),email:str(formData,"email"),locality:str(formData,"locality"),address:str(formData,"address"),notes:str(formData,"notes")}});await audit(tx,{userId:actor.id,action:"UPDATE",entity:"Client",entityId:clientId,previousValue:{name:previous.name,phone:previous.phone,email:previous.email,locality:previous.locality,address:previous.address,notes:previous.notes},newValue:{name:next.name,phone:next.phone,email:next.email,locality:next.locality,address:next.address,notes:next.notes},operationId:randomUUID()});});
   revalidatePath(`/clientes/${clientId}`);
 }

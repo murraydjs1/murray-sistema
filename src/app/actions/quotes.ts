@@ -4,7 +4,7 @@ import { ClientType, Currency, DiscountType, Prisma, QuoteItemType, QuoteStatus 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/server/db/prisma";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { audit } from "@/server/audit/audit";
 import { nextNumber } from "@/server/services/sequence";
 import { calculateQuote, moneyString, type QuoteItemInput } from "@/lib/money/quote-calculator";
@@ -13,7 +13,7 @@ import { suggestSetupTime } from "@/lib/dates/times";
 type EditorItem = QuoteItemInput & { type: QuoteItemType; serviceId?: string; addOnId?: string; currency: Currency };
 
 export async function createQuote(formData: FormData) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const eventDate = new Date(`${String(formData.get("eventDate"))}T00:00:00.000Z`);
   if (Number.isNaN(eventDate.valueOf())) throw new Error("Fecha inválida");
   const quote = await prisma.$transaction(async tx => {
@@ -37,7 +37,7 @@ export async function createQuote(formData: FormData) {
 }
 
 export async function updateQuote(quoteId: string, formData: FormData) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const eventDate = new Date(`${String(formData.get("eventDate"))}T00:00:00.000Z`);
   if (Number.isNaN(eventDate.valueOf())) throw new Error("Fecha inválida");
   await prisma.$transaction(async tx => {
@@ -49,7 +49,7 @@ export async function updateQuote(quoteId: string, formData: FormData) {
 }
 
 export async function saveQuoteVersion(quoteId: string, payload: string) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const raw = JSON.parse(payload) as { currency: Currency; items: EditorItem[]; generalDiscount: { type: DiscountType; value: number | string }; taxRate: number | string; taxName?: string; depositPercentage: number | string; notes?: string };
   if (!Object.values(Currency).includes(raw.currency) || raw.items.some(i => i.currency !== raw.currency)) throw new Error("Todos los ítems deben usar la moneda de la versión");
   const calculated = calculateQuote(raw);
@@ -63,14 +63,14 @@ export async function saveQuoteVersion(quoteId: string, payload: string) {
 }
 
 export async function changeQuoteStatus(quoteId: string, status: QuoteStatus) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   if (status === QuoteStatus.CONFIRMADO) throw new Error("Usá la acción de confirmar con una versión explícita");
   await prisma.$transaction(async tx => { const old = await tx.quote.findUniqueOrThrow({ where: { id: quoteId } }); const next = await tx.quote.update({ where: { id: quoteId }, data: { status } }); await audit(tx, { userId: actor.id, action: "STATUS_CHANGE", entity: "Quote", entityId: quoteId, previousValue: { status: old.status }, newValue: { status: next.status }, operationId: randomUUID() }); });
   revalidatePath(`/presupuestos/${quoteId}`);
 }
 
 export async function registerProposalSent(quoteId: string) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   await prisma.$transaction(async tx => {
     const quote = await tx.quote.findUniqueOrThrow({ where: { id: quoteId } });
     if (quote.status === QuoteStatus.CANCELADO) throw new Error("No se puede enviar una propuesta cancelada");
@@ -92,7 +92,7 @@ export async function registerProposalSent(quoteId: string) {
 }
 
 export async function confirmQuote(quoteId: string, versionId: string, setupTime?: string) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const event = await prisma.$transaction(async tx => {
     const quote = await tx.quote.findUniqueOrThrow({ where: { id: quoteId }, include: { event: true } });
     if (quote.event) return quote.event;

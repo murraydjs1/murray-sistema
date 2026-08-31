@@ -5,7 +5,7 @@ import { ProposalPrintActions } from "@/components/quotes/proposal-actions";
 import { buildProposalWhatsappMessage } from "@/lib/quotes/proposal";
 import { formatMoney } from "@/lib/money/format";
 import { premium200Service } from "@/lib/catalog/premium-200";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
 const included = [
@@ -26,7 +26,7 @@ const premiumIncluded = [
 ] as const;
 
 export default async function ProposalPage({ params }: { params: Promise<{ id: string; versionId: string }> }) {
-  await requireManagement();
+  await requireOperations();
   const { id, versionId } = await params;
   const [quote, catalogAddOns] = await Promise.all([
     prisma.quote.findUnique({

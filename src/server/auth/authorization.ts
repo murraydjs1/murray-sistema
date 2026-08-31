@@ -14,4 +14,5 @@ export async function requireRole(roles: UserRole[]) {
   return user;
 }
 export const requireManagement = () => requireRole([UserRole.ADMIN, UserRole.ADMIN_FINANCIERO]);
+export const requireOperations = () => requireRole([UserRole.ADMIN, UserRole.ADMIN_FINANCIERO, UserRole.OPERACIONES]);
 export const requireAdmin = () => requireRole([UserRole.ADMIN]);

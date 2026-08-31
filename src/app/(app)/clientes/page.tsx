@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { humanLabel } from "@/lib/ui/labels";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
 export default async function Clients({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  await requireManagement();
+  await requireOperations();
   const { q } = await searchParams;
   const clients = await prisma.client.findMany({
     where: q ? { OR: [

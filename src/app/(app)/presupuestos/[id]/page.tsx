@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { changeQuoteStatus, confirmQuote, updateQuote } from "@/app/actions/quotes";
 import { prisma } from "@/server/db/prisma";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { formatMoney } from "@/lib/money/format";
 import { suggestSetupTime } from "@/lib/dates/times";
 import { ProposalActions } from "@/components/quotes/proposal-actions";
 import { buildProposalWhatsappMessage } from "@/lib/quotes/proposal";
 
 export default async function QuoteDetail({params}:{params:Promise<{id:string}>}){
-  await requireManagement(); const {id}=await params;
+  await requireOperations(); const {id}=await params;
   const [q,clients,types]=await Promise.all([
     prisma.quote.findUnique({where:{id},include:{client:true,eventType:true,event:true,versions:{include:{items:true,createdBy:true},orderBy:{versionNumber:"desc"}}}}),
     prisma.client.findMany({where:{active:true},orderBy:{name:"asc"},select:{id:true,name:true}}),

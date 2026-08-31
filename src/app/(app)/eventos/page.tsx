@@ -2,7 +2,7 @@ import { Currency, EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import Link from "next/link";
 import { formatMoney } from "@/lib/money/format";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 import { humanLabel } from "@/lib/ui/labels";
 
@@ -20,7 +20,7 @@ type EventRow = Prisma.EventGetPayload<{
 }>;
 
 export default async function Events({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  await requireManagement();
+  await requireOperations();
   const params = await searchParams;
   const sort = params.sort === "oldest" ? "oldest" : "newest";
   const selectedStatus = Object.values(EventStatus).includes(params.status as EventStatus) ? params.status as EventStatus : undefined;

@@ -25,7 +25,7 @@ export default async function Users() {
               <input type="hidden" name="id" value={user.id} />
               <div className="field"><label>Nombre</label><input name="name" defaultValue={user.name} required /></div>
               <div className="field"><label>Email</label><input name="email" type="email" defaultValue={user.email} required /></div>
-              <div className="field"><label>Rol</label><select name="role" defaultValue={user.role}><option value="ADMIN">Administrador</option><option value="ADMIN_FINANCIERO">Administración financiera</option><option value="STAFF">Personal</option></select></div>
+              <div className="field"><label>Rol</label><select name="role" defaultValue={user.role}><option value="ADMIN">Administrador</option><option value="ADMIN_FINANCIERO">Administración financiera</option><option value="OPERACIONES">Operaciones</option><option value="STAFF">Personal</option></select></div>
               <div className="field"><label>Nueva contraseña (opcional)</label><input name="password" type="password" /></div>
               <div className="row"><button className="btn btn-primary">Guardar cambios</button></div>
             </form>
@@ -38,7 +38,7 @@ export default async function Users() {
         <form action={saveUser} className="card form">
           <div className="field"><label>Nombre *</label><input name="name" required /></div>
           <div className="field"><label>Email *</label><input name="email" type="email" required /></div>
-          <div className="field"><label>Rol *</label><select name="role"><option value="ADMIN_FINANCIERO">Administración financiera</option><option value="STAFF">Personal</option><option value="ADMIN">Administrador</option></select></div>
+          <div className="field"><label>Rol *</label><select name="role"><option value="OPERACIONES">Operaciones</option><option value="ADMIN_FINANCIERO">Administración financiera</option><option value="OPERACIONES">Operaciones</option><option value="STAFF">Personal</option><option value="ADMIN">Administrador</option></select></div>
           <div className="field"><label>Contraseña inicial *</label><input name="password" type="password" required /><small className="muted">Usá una contraseña temporal y compartila por un canal seguro.</small></div>
           <button className="btn btn-primary">Crear usuario</button>
         </form>

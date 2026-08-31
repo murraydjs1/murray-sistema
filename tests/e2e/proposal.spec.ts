@@ -25,7 +25,7 @@ test("arma una propuesta, copia el mensaje y abre una versión imprimible", asyn
   await page.getByLabel("Finalización *").fill("03:00");
   await page.getByRole("button", { name: "Crear y agregar servicios" }).click();
 
-  await page.getByRole("button", { name: "Fiesta de 50" }).click();
+  await page.getByRole("button", { name: "Producción estándar" }).click();
   await page.getByRole("button", { name: "Guardar nueva versión" }).click();
   await expect(page.getByRole("heading", { name: "Versión 1" })).toBeVisible();
 

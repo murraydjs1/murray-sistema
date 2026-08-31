@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 
 import { addContact, updateClient } from "@/app/actions/clients";
 import { formatMoney } from "@/lib/money/format";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
 export default async function ClientDetail({ params }: { params: Promise<{ id: string }> }) {
-  await requireManagement();
+  await requireOperations();
   const { id } = await params;
   const client = await prisma.client.findUnique({ where: { id }, include: { contacts: true, quotes: { orderBy: { createdAt: "desc" }, take: 10 }, payments: { include: { event: true, account: true }, orderBy: { paymentDate: "desc" } } } });
   if (!client) notFound();

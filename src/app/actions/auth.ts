@@ -11,6 +11,6 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user?.active || !(await argon2.verify(user.passwordHash, password))) return { error: "Email o contraseña incorrectos" };
   await createSession(user.id);
-  redirect(user.role === "STAFF" ? "/staff" : "/dashboard");
+  redirect(user.role === "STAFF" ? "/staff" : user.role === "OPERACIONES" ? "/eventos" : "/dashboard");
 }
 export async function logout() { await deleteSession(); redirect("/login"); }

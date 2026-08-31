@@ -38,7 +38,7 @@ async function main() {
     const demoPassword = process.env.SEED_DEMO_PASSWORD;
     if (!demoPassword) throw new Error("SEED_DEMO_PASSWORD es obligatorio cuando SEED_DEMO_USERS=true");
     const passwordHash = await argon2.hash(demoPassword, { type: argon2.argon2id });
-    for (const [name,email,role] of [["Miguel","miguel@murraydjs.local",UserRole.ADMIN],["Maicky","maicky@murraydjs.local",UserRole.ADMIN_FINANCIERO],["Paddy","paddy@murraydjs.local",UserRole.STAFF],["Luis","luis@murraydjs.local",UserRole.STAFF],["Gonzalo","gonzalo@murraydjs.local",UserRole.STAFF],["Bautista","bautista@murraydjs.local",UserRole.STAFF]] as const) {
+    for (const [name,email,role] of [["Miguel","miguel@murraydjs.local",UserRole.ADMIN],["Maicky","maicky@murraydjs.local",UserRole.ADMIN_FINANCIERO],["Paddy","paddy@murraydjs.local",UserRole.STAFF],["Luis","luis@murraydjs.local",UserRole.OPERACIONES],["Gonzalo","gonzalo@murraydjs.local",UserRole.STAFF],["Bautista","bautista@murraydjs.local",UserRole.STAFF]] as const) {
       await db.user.upsert({ where: { email }, update: {name,role,passwordHash,active:true}, create: { name,email,passwordHash,role } });
     }
   }

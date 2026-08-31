@@ -7,7 +7,7 @@ import {
   LogOut, Menu, PackagePlus, ReceiptText, Upload, UserRoundCog, Users,
 } from "lucide-react";
 
-type Role = "ADMIN" | "ADMIN_FINANCIERO" | "STAFF";
+type Role = "ADMIN" | "ADMIN_FINANCIERO" | "OPERACIONES" | "STAFF";
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -53,9 +53,13 @@ function NavLink({ item, compact = false }: { item: NavItem; compact?: boolean }
 
 export function AppNavigation({ role, name, logoutAction }: { role: Role; name: string; logoutAction: () => Promise<void> }) {
   const staff = role === "STAFF";
+  const operator = role === "OPERACIONES";
   const visibleGroups = staff
     ? [{ label: "Operación", items: [{ href: "/staff", label: "Mis eventos", icon: CalendarDays }] }]
-    : groups.map((group) => group.label === "Configuración" && role === "ADMIN"
+    : (operator ? groups.filter((group) => ["Operación", "Comercial"].includes(group.label)).map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.href !== "/catalogo"),
+    })) : groups).map((group) => group.label === "Configuración" && role === "ADMIN"
       ? { ...group, items: [...group.items, { href: "/usuarios", label: "Usuarios", icon: Users }] }
       : group);
   const allItems = visibleGroups.flatMap((group) => group.items);
@@ -64,7 +68,7 @@ export function AppNavigation({ role, name, logoutAction }: { role: Role; name: 
 
   return <>
     <aside className="sidebar" aria-label="Navegación lateral">
-      <Link href={staff ? "/staff" : "/dashboard"} className="brand" aria-label="Murray DJs — inicio">
+      <Link href={staff ? "/staff" : operator ? "/eventos" : "/dashboard"} className="brand" aria-label="Murray DJs — inicio">
         <span className="brand-compact" aria-hidden><Headphones size={24} strokeWidth={1.8} /></span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-full" src="/brand/murray-logo-dark.svg" alt="Murray Disc Jockeys" width={168} height={96} />

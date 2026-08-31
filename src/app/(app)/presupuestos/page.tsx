@@ -2,11 +2,11 @@ import { QuoteStatus } from "@prisma/client";
 import Link from "next/link";
 import { formatMoney } from "@/lib/money/format";
 import { humanLabel } from "@/lib/ui/labels";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
 export default async function Quotes({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
-  await requireManagement();
+  await requireOperations();
   const params = await searchParams;
   const status = Object.values(QuoteStatus).includes(params.status as QuoteStatus) ? params.status as QuoteStatus : undefined;
   const quotes = await prisma.quote.findMany({

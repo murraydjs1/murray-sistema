@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const db=new PrismaClient();
 const password=process.env.SEED_DEMO_PASSWORD!;
-async function login(page:import("@playwright/test").Page,email:string){await page.goto("/login");await page.getByLabel("Email").fill(email);await page.getByLabel("Contraseña").fill(password);await page.getByRole("button",{name:"Ingresar"}).click();await page.waitForURL(email.startsWith("paddy")?"**/staff":"**/dashboard");}
+async function login(page:import("@playwright/test").Page,email:string){await page.goto("/login");await page.getByLabel("Email").fill(email);await page.getByLabel("Contraseña").fill(password);await page.getByRole("button",{name:"Ingresar"}).click();await page.waitForURL(email.startsWith("paddy")?"**/staff":email.startsWith("luis")?"**/eventos":"**/dashboard");}
 async function logout(page:import("@playwright/test").Page){await page.locator("form").filter({has:page.getByRole("button",{name:"Salir"})}).getByRole("button",{name:"Salir"}).click();await page.waitForURL("**/login");}
 async function addCatalogItem(page:import("@playwright/test").Page,type:"Servicio"|"Adicional",name:string){await page.getByRole("heading",{name:"Armar presupuesto"}).waitFor();await page.waitForTimeout(300);await page.getByRole("button",{name:type,exact:true}).click();const card=page.locator(".item-card").last();await card.waitFor({state:"visible"});await card.locator("select").first().selectOption({label:name});}
 
@@ -11,7 +11,7 @@ test.afterAll(async()=>db.$disconnect());
 test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   await login(page,"miguel@murraydjs.local");
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading",{name:"Resumen del período"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Panel de gestión"})).toBeVisible();
 
   await page.goto("/clientes/nuevo");
   await page.getByLabel("Nombre / razón social *").fill("Cliente Prueba Murray");
@@ -84,7 +84,6 @@ test("Sprint 1 completo con PostgreSQL real",async({page})=>{
 
   await logout(page);await login(page,"maicky@murraydjs.local");await page.goto("/clientes");await expect(page.getByText("Cliente Prueba Murray").first()).toBeVisible();await page.goto("/usuarios");await expect(page).toHaveURL(/sin-acceso/);
   await logout(page);await login(page,"paddy@murraydjs.local");for(const path of ["/usuarios","/presupuestos","/eventos","/eventos/nuevo","/catalogo","/dashboard"]){await page.goto(path);await expect(page).toHaveURL(/sin-acceso/);await expect(page.getByText("Sin acceso")).toBeVisible();}
-
   const audit=await db.auditLog.findMany({where:{OR:[{entityId:quoteId},{entity:"Client"},{entity:"Event"}]}});expect(audit.some(x=>x.entity==="Client"&&x.action==="CREATE")).toBe(true);expect(audit.some(x=>x.entity==="Client"&&x.action==="UPDATE")).toBe(true);expect(audit.filter(x=>x.action==="CREATE_VERSION"&&x.entityId===quoteId)).toHaveLength(3);expect(audit.some(x=>x.action==="STATUS_CHANGE"&&x.entityId===quoteId)).toBe(true);expect(audit.some(x=>x.action==="CONFIRM_AND_CREATE_EVENT"&&x.entityId===quoteId)).toBe(true);expect(audit.some(x=>x.entity==="Event"&&x.action==="CREATE")).toBe(true);
   expect(clientUrl).toContain("/clientes/");
 });
@@ -109,7 +108,7 @@ test("flujo integrado, edición y filtros",async({page})=>{
   await page.getByRole("button",{name:"Guardar datos"}).click();
   await expect(page.getByText("Salón Integrado Editado")).toBeVisible();
 
-  await page.goto("/dashboard"); await page.getByText("Filtrar período").click(); await page.getByLabel("Desde").fill("2027-03-01"); await page.getByLabel("Hasta").fill("2027-03-31");
+  await page.goto("/dashboard"); await page.getByText("Período y filtros").click(); await page.getByLabel("Desde").fill("2027-03-01"); await page.getByLabel("Hasta").fill("2027-03-31");
   await page.getByLabel("Cliente").selectOption({label:clientName}); await page.getByRole("button",{name:"Aplicar filtros"}).click();
   await expect(page.getByLabel("Cliente").locator("option:checked")).toHaveText(clientName);
 

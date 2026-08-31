@@ -8,7 +8,7 @@ import { z } from "zod";
 import { suggestSetupTime } from "@/lib/dates/times";
 import { calculateQuote, moneyString } from "@/lib/money/quote-calculator";
 import { audit } from "@/server/audit/audit";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 import { nextNumber } from "@/server/services/sequence";
 
@@ -28,7 +28,7 @@ const inputSchema = z.object({
 });
 
 export async function createEvent(formData: FormData) {
-  const actor = await requireManagement();
+  const actor = await requireOperations();
   const input = inputSchema.parse({
     eventTypeId: text(formData, "eventTypeId"), eventDate: text(formData, "eventDate"), startTime: text(formData, "startTime"), endTime: text(formData, "endTime"),
     setupTime: optional(formData, "setupTime"), venue: text(formData, "venue"), currency: text(formData, "currency"), price: text(formData, "price"),

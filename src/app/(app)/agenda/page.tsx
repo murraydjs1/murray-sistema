@@ -1,10 +1,10 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 
 export default async function Agenda({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  await requireManagement();
+  await requireOperations();
   const params = await searchParams;
   const match = /^(\d{4})-(\d{2})$/.exec(params.month || "");
   const now = new Date();

@@ -5,7 +5,7 @@ import Decimal from "decimal.js";
 import { Currency, EventStatus, ExpensePaymentMethod, FinancialStatus, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/server/db/prisma";
-import { requireManagement } from "@/server/auth/authorization";
+import { requireManagement, requireOperations } from "@/server/auth/authorization";
 import { audit } from "@/server/audit/audit";
 import { createLedgerMovement, voidLedgerMovement } from "@/server/treasury/ledger";
 
@@ -25,7 +25,7 @@ async function assertOpen(tx: Prisma.TransactionClient, eventId:string) {
 }
 
 export async function createExpense(eventId:string, formData:FormData) {
-  const actor=await requireManagement();
+  const actor=await requireOperations();
   const categoryId=text(formData,"categoryId"), description=text(formData,"description"), currency=text(formData,"currency") as Currency;
   const amount=new Decimal(text(formData,"amount")||0), expenseDate=new Date(`${text(formData,"expenseDate")}T00:00:00.000Z`);
   const paymentRaw=nullable(formData,"paymentMethod"), paymentMethod=paymentRaw as ExpensePaymentMethod|null;
@@ -47,7 +47,7 @@ export async function createExpense(eventId:string, formData:FormData) {
 }
 
 export async function updateExpense(id:string, formData:FormData) {
-  const actor=await requireManagement(); let eventId="";
+  const actor=await requireOperations(); let eventId="";
   const categoryId=text(formData,"categoryId"), description=text(formData,"description"), currency=text(formData,"currency") as Currency;
   const amount=new Decimal(text(formData,"amount")||0), expenseDate=new Date(`${text(formData,"expenseDate")}T00:00:00.000Z`);
   const paymentRaw=nullable(formData,"paymentMethod"), paymentMethod=paymentRaw as ExpensePaymentMethod|null;
