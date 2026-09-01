@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { premium200AddOns, premium200Service } from "@/lib/catalog/premium-200";
+import { premium200AddOns, premium200Service, retiredPremiumAddOnCodes } from "@/lib/catalog/premium-200";
 
 type CatalogPreset = { code: string; name: string; category: string; description: string; listPrice: string; currency: "ARS" | "USD" };
 
@@ -47,6 +47,11 @@ const migrations = [{
   key: "2026-08-25-premium-led-dj-booth-option",
   async apply(tx: Prisma.TransactionClient) {
     for (const addOn of premium200AddOns) await upsertAddOn(tx, addOn);
+  },
+}, {
+  key: "2026-08-31-hide-unapproved-premium-add-ons",
+  async apply(tx: Prisma.TransactionClient) {
+    await tx.addOn.updateMany({ where: { code: { in: [...retiredPremiumAddOnCodes] } }, data: { active: false } });
   },
 }] as const;
 
