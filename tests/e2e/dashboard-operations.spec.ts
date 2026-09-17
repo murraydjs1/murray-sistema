@@ -1,0 +1,52 @@
+import { expect, test } from "@playwright/test";
+import { PrismaClient } from "@prisma/client";
+import { previousWeek } from "../../src/lib/dashboard/operations";
+const db = new PrismaClient();
+test.afterAll(() => db.$disconnect());
+
+test("weekly home collects and pays without leaving the dashboard", async ({ page }) => {
+  const user = await db.user.findFirstOrThrow({ where: { role: "ADMIN" } });
+  const eventType = await db.eventType.findFirstOrThrow();
+  const staff = await db.staff.create({ data: { name: "Personal revisión semanal", defaultRole: "DJ", defaultEventRate: "70.20", currency: "ARS" } });
+  const client = await db.client.create({ data: { name: "Cliente revisión semanal", type: "PARTICULAR" } });
+  const { start } = previousWeek();
+  const suffix = Date.now();
+  const quote = await db.quote.create({ data: { number: `PRE-WEEK-${suffix}`, clientId: client.id, eventTypeId: eventType.id, eventDate: start, venue: "Salón semanal", startTime: "21:00", endTime: "03:00", createdById: user.id } });
+  const version = await db.quoteVersion.create({ data: { quoteId: quote.id, versionNumber: 1, currency: "ARS", grossSubtotal: "100", itemDiscountTotal: 0, subtotalAfterItemDiscounts: "100", generalDiscountValue: 0, generalDiscountAmount: 0, taxableBase: "100", taxRate: "21", taxAmount: "21", totalFinal: "121", depositPercentage: 0, depositAmount: 0, balance: "121", createdById: user.id } });
+  const event = await db.event.create({ data: { number: `EVT-WEEK-${suffix}`, clientId: client.id, eventTypeId: eventType.id, eventDate: start, venue: "Salón semanal", startTime: "21:00", endTime: "03:00", sourceQuoteId: quote.id, sourceQuoteVersionId: version.id, status: "REALIZADO" } });
+  await db.eventStaff.create({ data: { eventId: event.id, staffId: staff.id, assignmentType: "DJ", agreedAmount: "70.20", currency: "ARS", createdById: user.id } });
+  await page.goto("/login");
+  await page.getByLabel("Email").fill("miguel@murraydjs.local");
+  await page.getByLabel("Contraseña").fill(process.env.SEED_DEMO_PASSWORD!);
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await page.waitForURL("**/dashboard");
+  await expect(page.getByRole("heading", { name: "Lo que queda por resolver" })).toBeVisible();
+  const card = page.locator(`#revision-semanal [data-event-id="${event.id}"]`);
+  await expect(card).toContainText("Cliente revisión semanal");
+  await card.getByText("Registrar cobro · ARS", { exact: true }).click();
+  const collection = card.locator(".quick-payment").first();
+  await collection.getByLabel("Importe ARS").fill("20.10");
+  await collection.getByRole("button", { name: "Guardar cobro" }).click();
+  await expect(collection.getByRole("status")).toContainText("Movimiento registrado");
+  await expect(card.locator(".operations-amounts")).toContainText("100,90");
+  await card.getByText("Registrar pago · ARS", { exact: true }).click();
+  const payment = card.locator(".operations-person .quick-payment");
+  await payment.getByLabel("Importe ARS").fill("20.10");
+  await payment.getByRole("button", { name: "Guardar pago", exact: true }).click();
+  await expect(payment.getByRole("status")).toContainText("Movimiento registrado");
+  await expect(card.locator(".operations-person")).toContainText("50,10");
+  expect(await db.clientPayment.count({ where: { eventId: event.id } })).toBe(1);
+  expect(await db.staffPayment.count({ where: { eventId: event.id } })).toBe(1);
+  const storedPayment = await db.staffPayment.findFirstOrThrow({ where: { eventId: event.id } });
+  expect(await db.auditLog.count({ where: { entity: "StaffPayment", entityId: storedPayment.id, action: "CREATE" } })).toBe(1);
+  await page.goto("/dashboard?from=2030-01-01&to=2030-01-31");
+  await expect(page.locator(`#eventos-por-cobrar [data-event-id="${event.id}"]`)).toContainText("100,90");
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.screenshot({ path: `test-results/dashboard-${width}.png`, fullPage: true });
+  }
+  await page.locator('.operations-shortcuts a[href="#revision-semanal"]').focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#revision-semanal$/);
+});

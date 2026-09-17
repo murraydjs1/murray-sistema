@@ -2,14 +2,14 @@ import {expect,test} from "@playwright/test";
 import {PrismaClient} from "@prisma/client";
 const db=new PrismaClient(),password=process.env.SEED_DEMO_PASSWORD!;
 async function login(page:import("@playwright/test").Page,email:string){await page.goto("/login");await page.getByLabel("Email").fill(email);await page.getByLabel("Contraseña").fill(password);await page.getByRole("button",{name:"Ingresar"}).click();await page.waitForURL(email.startsWith("paddy")?"**/staff":"**/dashboard")}
-async function logout(page:import("@playwright/test").Page){await page.locator("form").filter({has:page.getByRole("button",{name:"Salir"})}).getByRole("button",{name:"Salir"}).click();await page.waitForURL("**/login")}
+async function logout(page:import("@playwright/test").Page){await page.getByRole("button",{name:"Cerrar sesión",exact:true}).press("Enter");await page.waitForURL("**/login")}
 async function assign(page:import("@playwright/test").Page,name:string,type:string,amount:string){await page.getByLabel("Persona").selectOption({label:name});await page.getByLabel("Función").selectOption(type);await page.getByLabel("Importe acordado").fill(amount);await page.getByRole("button",{name:"Asignar persona"}).click();await expect(page.locator(".assignment-list .card").filter({hasText:name})).toBeVisible()}
 test.afterAll(()=>db.$disconnect());
 test("Sprint 2 personal, pagos y permisos con PostgreSQL real",async({page})=>{
   await login(page,"miguel@murraydjs.local");const gonzalo=await db.staff.findFirstOrThrow({where:{name:"Gonzalo"}});await db.staffPayment.deleteMany({where:{staffId:gonzalo.id}});const event=await db.event.findFirstOrThrow({where:{sourceQuote:{client:{name:"Cliente Prueba Murray"}}}});await page.goto(`/eventos/${event.id}`);
   await page.getByLabel("Encargado operativo").selectOption({label:"Maicky"});await page.getByRole("button",{name:"Guardar encargado"}).click();
   await assign(page,"Maicky","DJ","200000");await assign(page,"Gonzalo","TECNICO","120000");await assign(page,"Bautista","ARMADO","100000");await assign(page,"Paddy","DJ_TECNICO","0");
-  await page.getByLabel("Estado del evento").selectOption("REALIZADO");await page.getByRole("button",{name:"Actualizar estado"}).click();await expect(page.getByText("REALIZADO",{exact:true}).first()).toBeVisible();
+  await page.getByLabel("Estado del evento").selectOption("REALIZADO");await page.getByRole("button",{name:"Actualizar estado"}).click();await expect(page.getByLabel("Estado del evento")).toHaveValue("REALIZADO");await expect(page.locator(".badge").filter({hasText:/^Realizado$/})).toBeVisible();
   await page.goto("/personal/liquidaciones?month=2026-12&currency=ARS");const gRow=page.locator(".settlement-row").filter({hasText:"Gonzalo"});await expect(gRow).toContainText("$ 120.000");await Promise.all([page.waitForURL("**/personal/liquidaciones/**"),gRow.click()]);
   await expect(page.getByText("Pendiente neto").locator("..")).toContainText("$ 120.000");
   await page.goto(`/personal/${gonzalo.id}`);const payment=page.locator("form").filter({has:page.getByRole("button",{name:"Registrar movimiento"})});

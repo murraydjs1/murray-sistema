@@ -4,14 +4,14 @@ import { PrismaClient } from "@prisma/client";
 const db=new PrismaClient();
 const password=process.env.SEED_DEMO_PASSWORD!;
 async function login(page:import("@playwright/test").Page,email:string){await page.goto("/login");await page.getByLabel("Email").fill(email);await page.getByLabel("Contraseña").fill(password);await page.getByRole("button",{name:"Ingresar"}).click();await page.waitForURL(email.startsWith("paddy")?"**/staff":email.startsWith("luis")?"**/eventos":"**/dashboard");}
-async function logout(page:import("@playwright/test").Page){await page.locator("form").filter({has:page.getByRole("button",{name:"Salir"})}).getByRole("button",{name:"Salir"}).click();await page.waitForURL("**/login");}
+async function logout(page:import("@playwright/test").Page){await page.getByRole("button",{name:"Cerrar sesión",exact:true}).press("Enter");await page.waitForURL("**/login");}
 async function addCatalogItem(page:import("@playwright/test").Page,type:"Servicio"|"Adicional",name:string){await page.getByRole("heading",{name:"Armar presupuesto"}).waitFor();await page.waitForTimeout(300);await page.getByRole("button",{name:type,exact:true}).click();const card=page.locator(".item-card").last();await card.waitFor({state:"visible"});await card.locator("select").first().selectOption({label:name});}
 
 test.afterAll(async()=>db.$disconnect());
 test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   await login(page,"miguel@murraydjs.local");
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading",{name:"Panel de gestión"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Lo que queda por resolver"})).toBeVisible();
 
   await page.goto("/clientes/nuevo");
   await page.getByLabel("Nombre / razón social *").fill("Cliente Prueba Murray");
@@ -75,7 +75,7 @@ test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   expect(await db.event.count({where:{sourceQuoteId:quoteId}})).toBe(1);
   await page.goto(`/presupuestos/${quoteId}`);await expect(page.getByRole("button",{name:/Confirmar esta versión/})).toHaveCount(0);expect(await db.event.count({where:{sourceQuoteId:quoteId}})).toBe(1);
   await page.goto("/agenda?month=2026-12");await expect(page.getByText("Cliente Prueba Murray",{exact:false}).first()).toBeVisible();
-  await page.goto("/dashboard?from=2026-12-01&to=2026-12-31");await expect(page.locator(".dashboard-card").filter({hasText:"Eventos del período"})).toContainText("1");
+  await page.goto("/dashboard?from=2026-12-01&to=2026-12-31");await expect(page.locator(".dashboard-kpi").filter({hasText:"Eventos del período"})).toContainText("1");
 
   await page.goto("/clientes/nuevo");await page.getByLabel("Nombre / razón social *").fill("Empresa Prueba Murray");await page.getByLabel("Tipo").selectOption("EMPRESA");await page.getByRole("button",{name:"Guardar cliente"}).click();await expect(page).toHaveURL(/clientes\/[0-9a-f-]+$/);
   await page.goto("/presupuestos/nuevo");await page.locator('[name="clientId"]').selectOption({label:"Empresa Prueba Murray"});await page.locator('[name="eventTypeId"]').selectOption({label:"Corporativo"});await page.locator('[name="eventDate"]').fill("2027-01-15");await page.locator('[name="startTime"]').fill("20:00");await page.locator('[name="endTime"]').fill("01:00");await page.locator('[name="venue"]').fill("Centro Corporativo");await page.getByRole("button",{name:"Crear y agregar servicios"}).click();
@@ -109,10 +109,10 @@ test("flujo integrado, edición y filtros",async({page})=>{
   await expect(page.getByText("Salón Integrado Editado")).toBeVisible();
 
   await page.goto("/dashboard"); await page.getByText("Período y filtros").click(); await page.getByLabel("Desde").fill("2027-03-01"); await page.getByLabel("Hasta").fill("2027-03-31");
-  await page.getByLabel("Cliente").selectOption({label:clientName}); await page.getByRole("button",{name:"Aplicar filtros"}).click();
+  await page.getByLabel("Cliente").selectOption({label:clientName}); await page.getByRole("button",{name:"Aplicar",exact:true}).click();
   await expect(page.getByLabel("Cliente").locator("option:checked")).toHaveText(clientName);
 
-  await page.goto("/catalogo"); const service=page.locator("details.catalog-item").filter({hasText:"DJ Micky 2 horas"}); await service.locator("summary").click();
+  await page.goto("/catalogo"); const service=page.locator("details.catalog-row").filter({hasText:"DJ Micky 2 horas"}); await service.locator("summary").click();
   await service.locator('[name="category"]').fill("DJ E2E"); await service.getByRole("button",{name:"Guardar cambios"}).click();
   await expect(service.getByText("DJ E2E")).toBeVisible(); await service.locator('[name="category"]').fill("DJ"); await service.getByRole("button",{name:"Guardar cambios"}).click();
 

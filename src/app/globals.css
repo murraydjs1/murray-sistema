@@ -308,3 +308,34 @@ body{font-family:Manrope,Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"S
 /* Finanzas operativas */
 .operational-metrics .metric{display:grid;gap:5px;text-decoration:none}.operational-metrics .metric small{color:var(--text-muted);font-size:12px}.finance-note{margin:18px 0 28px;padding:13px 15px;border:1px solid var(--border-soft);border-radius:var(--radius-control);color:var(--text-secondary);font-size:13px}.finance-worklist{margin-top:8px}.finance-worklist-card h2{margin:0;font-size:20px}.text-link{color:var(--brand);font-size:13px;font-weight:700;text-decoration:none}.finance-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid var(--border-soft);color:inherit;text-decoration:none}.finance-row span{display:grid;gap:4px}.finance-row small{color:var(--text-muted)}.finance-row>strong{white-space:nowrap}.finance-detail-card{display:grid;gap:16px}.finance-detail-card details{border-top:1px solid var(--border-soft);padding-top:14px}.finance-detail-card details summary{color:var(--brand);cursor:pointer;font-weight:700}.finance-breakdown{display:flex;flex-wrap:wrap;gap:8px 18px;color:var(--text-secondary);font-size:13px}.finance-breakdown span:last-child{font-weight:700;color:var(--text-primary)}.finance-reimbursement{justify-content:flex-end}.finance-reimbursement input{max-width:165px}
 @media(max-width:600px){.finance-row{align-items:flex-start;flex-direction:column;gap:8px}.finance-worklist{gap:14px}.finance-reimbursement{display:grid}.finance-reimbursement input{max-width:none}}
+
+/* Operations home: weekly review and outstanding event work. */
+.operations-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.operations-shortcuts>a{display:flex;flex-direction:column;gap:10px;min-height:150px;overflow-wrap:anywhere}
+.operations-shortcuts span,.operations-shortcuts small{color:var(--text-secondary)}
+.operations-shortcuts strong{font-size:clamp(18px,1.8vw,25px);font-variant-numeric:tabular-nums}
+.operations-overview section{scroll-margin-top:24px}
+.operations-event{display:grid;gap:16px;min-width:0}
+.operations-event h3,.operations-event h4,.operations-event p{margin:0}
+.operations-event h3{font-size:18px;margin-bottom:8px}
+.operations-event>.btn{justify-self:start}
+.operations-event a:not(.btn):hover{text-decoration:underline}
+.operations-amounts{display:flex;flex-wrap:wrap;gap:24px;margin:0}
+.operations-amounts dt{color:var(--text-secondary);font-size:13px;margin-bottom:6px}
+.operations-amounts dd{margin:0;font-size:20px;font-weight:750;font-variant-numeric:tabular-nums}
+.operations-team,.operations-person{display:grid;gap:12px}
+.operations-person{border-top:1px solid var(--border-soft);padding-top:16px}
+.operations-overview summary{min-height:44px;padding:12px 0;cursor:pointer}
+.quick-payment{border-top:1px solid var(--border-soft)}
+@media(max-width:1100px){.operations-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.operations-shortcuts{grid-template-columns:1fr}.operations-shortcuts>a{min-height:110px}.operations-event>.btn{justify-self:stretch}.operations-amounts{flex-direction:column;gap:12px}.operations-event .form-grid{grid-template-columns:1fr}}
+
+.operations-compact>summary{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;list-style:revert}
+.operations-compact>summary small{display:block;margin-top:6px;color:var(--text-secondary)}
+.operations-compact>summary::before{content:"+";color:var(--text-secondary)}
+.operations-compact[open]>summary::before{content:"−"}
+.operations-compact>summary>span{flex:1;min-width:180px}
+.operations-compact>.operations-event{border:0;padding:16px 0 0;box-shadow:none}
+.operations-person>.btn{justify-self:start}
+
+.topbar>div>.event-number{display:block}

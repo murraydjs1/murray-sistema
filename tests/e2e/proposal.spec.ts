@@ -39,7 +39,7 @@ test("arma una propuesta, copia el mensaje y abre una versión imprimible", asyn
   const proposal = await popupPromise;
   await proposal.waitForLoadState();
   await expect(proposal.getByRole("heading", { name: "Cumpleaños 50 · Producción técnica" })).toBeVisible();
-  await expect(proposal.getByText("Producción para fiestas de 50").first()).toBeVisible();
+  await expect(proposal.getByRole("heading", { name: "Alcance de la producción" })).toBeVisible();
   await expect(proposal.getByRole("button", { name: "Imprimir o guardar PDF" })).toBeVisible();
 
   const quote = await db.quote.findFirstOrThrow({ where: { client: { name: clientName } } });

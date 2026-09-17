@@ -1,3 +1,4 @@
+import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { Currency, EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import { ArrowRight, CalendarDays, CircleDollarSign, Clock3, TriangleAlert } from "lucide-react";
@@ -90,9 +91,11 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return <>
     <div className="topbar dashboard-heading">
-      <div><div className="eyebrow">Visión general</div><h1>Panel de gestión</h1><p className="muted">Actividad, caja y próximos compromisos en un solo lugar.</p></div>
+      <div><div className="eyebrow">Visión general</div><h1>Lo que queda por resolver</h1><p className="muted">Tu revisión semanal y los pendientes de eventos pasados, a mano.</p></div>
       <div className="row"><Link className="btn btn-secondary" href="/presupuestos/nuevo">Nuevo presupuesto</Link><Link className="btn btn-primary" href="/eventos/nuevo">+ Nuevo evento</Link></div>
     </div>
+    <OperationsOverview />
+    <div className="section-head"><div><h2>Resumen del período</h2><p className="muted">Los filtros del resumen no ocultan pendientes de otras fechas.</p></div></div>
     <details className="filters dashboard-filters"><summary>Período y filtros</summary><form method="get" className="filter-grid">
       <div className="field"><label htmlFor="filter-from">Desde</label><input id="filter-from" name="from" type="date" defaultValue={from} /></div>
       <div className="field"><label htmlFor="filter-to">Hasta</label><input id="filter-to" name="to" type="date" defaultValue={to} /></div>
@@ -103,7 +106,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="field filter-search"><label htmlFor="filter-q">Buscar</label><input id="filter-q" name="q" defaultValue={filters.q || ""} placeholder="Número, cliente o lugar" /></div>
       <div className="filter-actions"><button className="btn btn-primary">Aplicar</button><Link className="btn btn-ghost" href="/dashboard">Limpiar</Link></div>
     </form></details>
-
     <section className="dashboard-kpis">
       <Kpi icon={<CalendarDays size={18} />} label="Eventos del período" value={String(events.length)} href={`/dashboard/detalle/eventos?${toQuery({ ...filters, from, to })}`} />
       <Kpi icon={<Clock3 size={18} />} label="Confirmados" value={String(operational.confirmed)} detail={`${operational.realized} realizados`} href="/eventos" />
