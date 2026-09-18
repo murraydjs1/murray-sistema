@@ -339,3 +339,9 @@ body{font-family:Manrope,Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"S
 .operations-person>.btn{justify-self:start}
 
 .topbar>div>.event-number{display:block}
+
+.event-delete-dialog{margin:auto;overflow-wrap:anywhere}
+.event-delete-dialog h2{font-size:1.15rem;font-weight:700}
+.event-delete-dialog .dialog-actions{flex-wrap:wrap}
+.event-delete-dialog .dialog-actions>.btn{flex:1 1 140px}
+.event-delete-trigger,.event-delete-dialog .btn{min-height:44px}

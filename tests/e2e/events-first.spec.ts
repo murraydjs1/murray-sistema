@@ -36,4 +36,27 @@ test("crea un evento directo con precio y encargado", async ({ page }) => {
   expect(String(event.sourceQuoteVersion?.taxableBase)).toBe("1000000");
   expect(String(event.sourceQuoteVersion?.totalFinal)).toBe("1210000");
   expect(event.managerStaff?.name).toBe("Maicky");
+
+  await page.getByRole("button", { name: "Eliminar evento", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Eliminar evento cargado por error" });
+  await expect(dialog).toContainText(event.number);
+  await dialog.getByRole("button", { name: "Volver sin eliminar" }).click();
+  expect(await db.event.count({ where: { id: event.id } })).toBe(1);
+  await page.getByRole("button", { name: "Eliminar evento", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(dialog.getByRole("button", { name: "Confirmar eliminación" })).toBeInViewport();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await page.screenshot({ path: `test-results/delete-event-${width}.png` });
+  }
+  await dialog.getByLabel("Motivo de eliminación").fill("Evento directo cargado por error");
+  await dialog.getByRole("button", { name: "Confirmar eliminación" }).click();
+  await expect(page).toHaveURL(/\/eventos\?eliminado=1$/);
+  await expect(page.getByRole("status")).toContainText("Evento eliminado");
+  expect(await db.event.count({ where: { id: event.id } })).toBe(0);
+  expect(await db.quote.findUnique({ where: { id: event.sourceQuoteId! } })).toMatchObject({ status: "CONSULTA", confirmedVersionId: null });
+  expect(await db.auditLog.count({ where: { entity: "Event", entityId: event.id, action: "DELETE" } })).toBe(1);
+  await page.goto(`/eventos/${event.id}`);
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
 });

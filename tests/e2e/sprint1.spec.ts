@@ -68,7 +68,7 @@ test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   await expect(latestCard.locator('[name="setupTime"]')).toHaveValue("18:30");
   await latestCard.getByRole("button",{name:"Confirmar esta versión y crear evento"}).click();
   await expect(page).toHaveURL(/eventos\/[0-9a-f-]+$/);
-  await expect(page.getByText("EVT-2026-",{exact:false})).toBeVisible();
+  await expect(page.locator(".event-number")).toContainText("EVT-2026-");
   await expect(page.getByText("Armado:").locator("..")).toContainText("18:30");
   const firstQuote=await db.quote.findUniqueOrThrow({where:{id:quoteId},include:{versions:{orderBy:{versionNumber:"asc"}},event:true}});
   expect(firstQuote.status).toBe("CONFIRMADO");expect(firstQuote.versions).toHaveLength(3);expect(String(firstQuote.versions[0].totalFinal)).toBe("5750000");expect(String(firstQuote.versions[1].totalFinal)).toBe("5900000");expect(String(firstQuote.versions[2].totalFinal)).toBe("5750000");expect(firstQuote.event?.sourceQuoteVersionId).toBe(firstQuote.versions[2].id);

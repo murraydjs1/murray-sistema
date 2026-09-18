@@ -6,7 +6,7 @@ import { requireOperations } from "@/server/auth/authorization";
 import { prisma } from "@/server/db/prisma";
 import { humanLabel } from "@/lib/ui/labels";
 
-type SearchParams = { sort?: string; q?: string; status?: string };
+type SearchParams = { sort?: string; q?: string; status?: string; eliminado?: string };
 type EventRow = Prisma.EventGetPayload<{
   include: {
     client: true;
@@ -56,6 +56,7 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
           </Link>
         </div>
       </div>
+      {params.eliminado === "1" && <p className="alert" role="status">Evento eliminado. Ya no aparece en la agenda ni en los reportes.</p>}
       <form className="toolbar" method="get">
         <input type="hidden" name="sort" value={sort} />
         <div className="field toolbar-search"><label htmlFor="events-q">Buscar</label><input id="events-q" name="q" defaultValue={params.q || ""} placeholder="Número, cliente o lugar" /></div>
@@ -116,7 +117,7 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
 
 function eventQuery(params: SearchParams) {
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
+  for (const [key, value] of Object.entries(params)) if (value && key !== "eliminado") query.set(key, value);
   return query.toString();
 }
 
