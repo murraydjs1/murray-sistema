@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Currency } from "@prisma/client";
 import Decimal from "decimal.js";
 
-import { createClientPayment } from "@/app/actions/treasury";
+import { QuickPayment } from "@/components/dashboard/quick-payment";
+import { previousWeek } from "@/lib/dashboard/operations";
 import { formatMoney } from "@/lib/money/format";
 import { requireManagement } from "@/server/auth/authorization";
 import { operationalFinanceSummary } from "@/server/finance/operational-summary";
@@ -23,7 +24,8 @@ export default async function ReceivablesPage() {
         <div className="stack">{items.map((row) => <article className="card finance-detail-card" key={`${row.event.id}-${currency}`}>
           <div className="row space"><div><Link href={`/eventos/${row.event.id}`}><strong>{row.event.number} · {row.event.client.name}</strong></Link><p className="muted">{row.event.eventDate.toLocaleDateString("es-AR", { timeZone: "UTC" })} · {row.event.venue}{row.paymentDueDate ? ` · vence ${row.paymentDueDate.toLocaleDateString("es-AR", { timeZone: "UTC" })}` : ""}</p></div><strong>{formatMoney(row.pendingCollection.toFixed(2), currency)}</strong></div>
           <div className="finance-breakdown"><span>Total {formatMoney(row.total.toFixed(2), currency)}</span><span>Cobrado {formatMoney(row.collected.toFixed(2), currency)}</span><span>Pendiente {formatMoney(row.pendingCollection.toFixed(2), currency)}</span></div>
-          {row.isLegacy ? <p className="muted">Importado desde Excel: actualizá venta o seña desde el evento para conservar el snapshot histórico.</p> : <details><summary>Registrar cobro</summary><form action={createClientPayment} className="form edit-panel"><input type="hidden" name="eventId" value={row.event.id}/><input type="hidden" name="idempotencyKey" value={randomUUID()}/><div className="form-grid"><div className="field"><label>Tipo</label><select name="paymentType"><option value="DEPOSIT">Seña</option><option value="PARTIAL">Pago parcial</option><option value="BALANCE">Saldo</option><option value="OTHER">Otro</option></select></div><div className="field"><label>Importe</label><input name="amount" type="number" min="0.01" max={row.pendingCollection.toFixed(2)} step="0.01" defaultValue={row.pendingCollection.toFixed(2)} required/></div><div className="field"><label>Fecha</label><input name="paymentDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required/></div><div className="field"><label>Medio</label><select name="paymentMethod"><option value="TRANSFER">Transferencia</option><option value="CASH">Efectivo</option><option value="MERCADO_PAGO">Mercado Pago</option><option value="OTHER">Otro</option></select></div><div className="field span-2"><label>Nota</label><input name="notes" placeholder="Opcional"/></div></div><button className="btn btn-primary">Registrar cobro</button></form></details>}
+          {row.isLegacy && <p className="muted">La seña de Excel ya está incluida. Registrá solo los cobros adicionales.</p>}
+          <QuickPayment eventId={row.event.id} currency={currency} date={previousWeek().today.toISOString().slice(0, 10)} operationId={randomUUID()} />
         </article>)}{!items.length && <div className="card empty">No hay cobros pendientes en {currency}.</div>}</div>
       </section>;
     })}

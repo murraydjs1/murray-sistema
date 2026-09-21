@@ -1,3 +1,4 @@
+import { legacyCollection } from "@/lib/treasury/legacy-collection";
 import { Currency, EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import Link from "next/link";
@@ -78,11 +79,11 @@ function buildRows(metric: Metric, events: DashboardEvent[], selectedCurrency?: 
       for (const currency of Object.values(Currency)) {
         if (selectedCurrency && selectedCurrency !== currency) continue;
         const sale = new Decimal(values[currency].sale ?? 0);
-        const deposit = new Decimal(values[currency].deposit ?? 0);
+        const deposit = legacyCollection(legacy, event.clientPayments, currency).paid;
         const cost = new Decimal(values[currency].cost ?? 0);
         const result = new Decimal(values[currency].result ?? 0);
-        if (metric === "cobrado" && deposit.gt(0)) rows.push(baseRow(event, deposit, currency, "Seña/cobro importado"));
-        if (metric === "a-cobrar" && sale.minus(deposit).gt(0)) rows.push(baseRow(event, sale.minus(deposit), currency, "Pendiente importado"));
+        if (metric === "cobrado" && deposit.gt(0)) rows.push(baseRow(event, deposit, currency, "Seña Excel + cobros adicionales"));
+        if (metric === "a-cobrar" && sale.minus(deposit).gt(0)) rows.push(baseRow(event, sale.minus(deposit), currency, "Venta Excel menos cobros"));
         if (metric === "costos" && cost.gt(0)) rows.push(baseRow(event, cost, currency, "Costo importado"));
         if (metric === "ganancia" && !result.eq(0)) rows.push(baseRow(event, result, currency, "Resultado importado"));
       }

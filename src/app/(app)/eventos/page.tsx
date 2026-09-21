@@ -1,4 +1,5 @@
-import { Currency, EventStatus, Prisma } from "@prisma/client";
+import { legacyCollections } from "@/lib/treasury/legacy-collection";
+import { EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import Link from "next/link";
 import { formatMoney } from "@/lib/money/format";
@@ -13,6 +14,7 @@ type EventRow = Prisma.EventGetPayload<{
     eventType: true;
     sourceQuoteVersion: true;
     legacyFinancialData: true;
+    clientPayments: true;
     managerStaff: true;
     staffAssignments: { where: { active: true }; include: { staff: true } };
     sourceQuote: { include: { payments: { where: { status: "ACTIVE" } } } };
@@ -34,7 +36,7 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
         { client: { name: { contains: params.q, mode: "insensitive" } } },
       ] : undefined,
     },
-    include: { client: true, eventType: true, sourceQuoteVersion: true, legacyFinancialData: true, managerStaff: true, staffAssignments: { where: { active: true }, include: { staff: true } }, sourceQuote: { include: { payments: { where: { status: "ACTIVE" } } } } },
+    include: { client: true, eventType: true, sourceQuoteVersion: true, legacyFinancialData: true, clientPayments: { where: { status: "ACTIVE" } }, managerStaff: true, staffAssignments: { where: { active: true }, include: { staff: true } }, sourceQuote: { include: { payments: { where: { status: "ACTIVE" } } } } },
     orderBy,
   });
 
@@ -86,10 +88,11 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
                 </thead>
                 <tbody>
                   {rows.map((event) => {
-                    const current = event.sourceQuoteVersion ? event.sourceQuoteVersion.currency : Currency.ARS;
-                    const total = event.sourceQuoteVersion ? new Decimal(event.sourceQuoteVersion.totalFinal) : legacyMoney(event.legacyFinancialData);
-                    const paid = event.sourceQuote?.payments.reduce((sum: Decimal, payment) => payment.currency === current ? sum.plus(new Decimal(String(payment.amount))) : sum, new Decimal(0)) || new Decimal(0);
-                    const pending = Decimal.max(total.minus(paid), 0);
+                    const balances = event.legacyFinancialData ? legacyCollections(event.legacyFinancialData, event.clientPayments) : event.sourceQuoteVersion ? (() => {
+                      const { currency, totalFinal } = event.sourceQuoteVersion;
+                      const paid = (event.sourceQuote?.payments ?? []).filter(p => p.currency === currency).reduce((sum, p) => sum.plus(p.amount), new Decimal(0));
+                      return [{ currency, paid, pending: new Decimal(totalFinal).minus(paid) }];
+                    })() : [];
                     const canceled = event.status === EventStatus.CANCELADO;
                     return (
                       <tr key={event.id} className={canceled ? "expense-void" : ""}>
@@ -99,8 +102,8 @@ export default async function Events({ searchParams }: { searchParams: Promise<S
                         <td data-label="Lugar">{event.venue}<small>{[event.address, event.locality].filter(Boolean).join(", ") || "Sin dirección"}</small></td>
                         <td data-label="Estado"><span className={`badge ${canceled ? "badge-danger" : event.status === "REALIZADO" ? "badge-green" : "badge-brand"}`}>{humanLabel(event.status)}</span></td>
                         <td data-label="Encargado"><span className="cell-primary">{event.managerStaff?.name || "Sin definir"}</span><small>{event.staffAssignments.map((a) => a.staff.name).join(" · ") || "Sin asignar"}</small></td>
-                        <td data-label="Cobrado">{formatMoney(paid.toFixed(2), current)}</td>
-                        <td data-label="Pendiente">{formatMoney(pending.toFixed(2), current)}</td>
+                        <td data-label="Cobrado">{balances.map(b => <div key={b.currency}>{formatMoney(b.paid.toFixed(2), b.currency)}</div>)}</td>
+                        <td data-label="Pendiente">{balances.map(b => <div key={b.currency}>{b.pending === null ? "Venta sin importe" : formatMoney(Decimal.max(b.pending, 0).toFixed(2), b.currency)}</div>)}</td>
                       </tr>
                     );
                   })}
@@ -130,9 +133,4 @@ function groupByMonth(events: EventRow[]) {
     groups.set(key, rows);
   }
   return [...groups.entries()].map(([label, rows]) => ({ label, rows }));
-}
-
-function legacyMoney(value: { saleArs: unknown; saleUsd: unknown } | null) {
-  if (!value) return new Decimal(0);
-  return new Decimal(String(value.saleArs ?? value.saleUsd ?? 0));
 }

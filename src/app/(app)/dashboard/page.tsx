@@ -1,3 +1,4 @@
+import { legacyCollection } from "@/lib/treasury/legacy-collection";
 import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { Currency, EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
@@ -60,7 +61,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     if (legacy) {
       const values = { ARS: { sale: legacy.saleArs, deposit: legacy.depositArs, cost: legacy.costArs, result: legacy.resultArs }, USD: { sale: legacy.saleUsd, deposit: legacy.depositUsd, cost: legacy.costUsd, result: legacy.resultUsd } };
       for (const currency of Object.values(Currency)) {
-        const sale = new Decimal(values[currency].sale ?? 0); const deposit = new Decimal(values[currency].deposit ?? 0);
+        const sale = new Decimal(values[currency].sale ?? 0); const deposit = legacyCollection(legacy, event.clientPayments, currency).paid;
         collected[currency] = collected[currency].plus(deposit); receivable[currency] = receivable[currency].plus(Decimal.max(sale.minus(deposit), 0));
         costs[currency] = costs[currency].plus(values[currency].cost ?? 0); profit[currency] = profit[currency].plus(values[currency].result ?? 0);
       }

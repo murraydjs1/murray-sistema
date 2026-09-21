@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
+import { formatMoney } from "../../src/lib/money/format";
 import { previousWeek } from "../../src/lib/dashboard/operations";
 const db = new PrismaClient();
 test.afterAll(() => db.$disconnect());
@@ -49,4 +50,74 @@ test("weekly home collects and pays without leaving the dashboard", async ({ pag
   await page.locator('.operations-shortcuts a[href="#revision-semanal"]').focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#revision-semanal$/);
+});
+
+test("financial admin records and voids Excel receipts with separate currency balances", async ({ page }) => {
+  const type = await db.eventType.findFirstOrThrow();
+  const client = await db.client.create({ data: { name: `Cliente Excel cobros ${Date.now()}`, type: "PARTICULAR" } });
+  const event = await db.event.create({ data: { number: `EVT-EXCEL-PAY-${Date.now()}`, clientId: client.id, eventTypeId: type.id, source: "EXCEL_IMPORT", eventDate: previousWeek().start, startTime: "21:00", endTime: "03:00", venue: "Salón Excel", legacyFinancialData: { create: { saleArs: "100.30", depositArs: "20.10", saleUsd: "10", depositUsd: "2", sourceSheet: "Hoja1", sourceRow: 501 } } } });
+  await page.goto("/login");
+  await page.getByLabel("Email").fill("maicky@murraydjs.local");
+  await page.getByLabel("Contraseña").fill(process.env.SEED_DEMO_PASSWORD!);
+  await page.getByRole("button", { name: "Ingresar" }).click();
+  await page.waitForURL("**/dashboard");
+  const card = page.locator(`#revision-semanal [data-event-id="${event.id}"]`);
+  await expect(card).toContainText("80,20");
+  await card.getByText("Registrar cobro · ARS", { exact: true }).focus();
+  await page.keyboard.press("Enter");
+  const form = card.locator(".quick-payment").filter({ hasText: "Registrar cobro · ARS" });
+  await form.getByLabel("Importe ARS").fill("30.10");
+  await form.getByLabel("Fecha del movimiento").fill("2026-09-21");
+  await form.getByLabel("Notas").fill("Transferencia saldo Excel");
+  const submitted = page.waitForRequest(r => r.method() === "POST" && Boolean(r.headers()["next-action"]));
+  await form.getByRole("button", { name: "Guardar cobro" }).click();
+  const request = await submitted;
+  await expect(form.getByRole("status")).toContainText("Movimiento registrado");
+  await expect(card).toContainText("50,10");
+  await expect(card).not.toContainText("80,20");
+  await page.goto(`/eventos/${event.id}`);
+  const receipts = page.getByRole("region", { name: "Cobros del evento importado" });
+  await expect(receipts).toContainText("30,10"); await expect(receipts).toContainText("50,10");
+  await expect(receipts).toContainText("Transferencia saldo Excel");
+  await receipts.getByText("Registrar cobro · ARS", { exact: true }).click();
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 950 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    await receipts.screenshot({ path: `test-results/imported-receipts-${width}.png` });
+  }
+  await receipts.getByLabel("Importe ARS").fill("50.10");
+  await receipts.getByLabel("Notas").first().fill("Último saldo");
+  await receipts.getByRole("button", { name: "Guardar cobro" }).first().click();
+  await expect(receipts.getByRole("status")).toContainText("Movimiento registrado");
+  const balance = receipts.locator(".card.stack").filter({ has: page.getByRole("heading", { name: "ARS", exact: true }) });
+  await expect(balance.locator(".operations-amounts > div").last()).toContainText(formatMoney("0", "ARS"));
+  await page.goto(`/eventos?q=${event.number}`);
+  const listRow = page.locator("tr").filter({ hasText: event.number });
+  await expect(listRow.locator('[data-label="Cobrado"]')).toContainText("100,30");
+  await expect(listRow.locator('[data-label="Pendiente"]')).toContainText("8,00");
+  await page.goto("/tesoreria/por-cobrar");
+  const pending = page.locator("article").filter({ hasText: event.number });
+  await expect(pending).toHaveCount(1); await expect(pending).toContainText("8,00");
+  await page.goto(`/eventos/${event.id}`);
+  const lastReceipt = receipts.locator("article").filter({ hasText: "Último saldo" });
+  await lastReceipt.getByText("Anular cobro", { exact: true }).click();
+  await lastReceipt.getByLabel("Motivo de anulación").fill("Se cargó en el evento equivocado");
+  await lastReceipt.getByRole("button", { name: "Confirmar anulación" }).click();
+  await expect(lastReceipt).toContainText("Anulado");
+  await expect(balance).toContainText("50,10");
+  const voided = await db.clientPayment.findFirstOrThrow({ where: { eventId: event.id, status: "VOID" } });
+  expect(await db.auditLog.count({ where: { entityId: voided.id, action: "VOID" } })).toBe(1);
+  expect((await db.eventLegacyFinancialData.findUniqueOrThrow({ where: { eventId: event.id } })).depositArs?.toFixed(2)).toBe("20.10");
+  const count = await db.clientPayment.count({ where: { eventId: event.id } });
+  for (const email of ["luis@murraydjs.local", "paddy@murraydjs.local"]) {
+    await page.context().clearCookies(); await page.goto("/login");
+    await page.getByLabel("Email").fill(email); await page.getByLabel("Contraseña").fill(process.env.SEED_DEMO_PASSWORD!);
+    await page.getByRole("button", { name: "Ingresar" }).click(); await page.waitForURL(/\/(eventos|staff)$/);
+    await page.goto(`/eventos/${event.id}`);
+    await expect(page.getByRole("region", { name: "Cobros del evento importado" })).toHaveCount(0);
+    if (email.startsWith("paddy")) { await expect(page).toHaveURL(/sin-acceso/); await expect(page.getByText("Transferencia saldo Excel")).toHaveCount(0); }
+    const response = await page.request.post("/dashboard", { headers: { "next-action": request.headers()["next-action"], "content-type": request.headers()["content-type"] }, data: request.postDataBuffer()! });
+    expect(response.headers()["x-action-redirect"]).toContain("/sin-acceso");
+    expect(await db.clientPayment.count({ where: { eventId: event.id } })).toBe(count);
+  }
 });

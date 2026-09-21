@@ -6,6 +6,8 @@ import Decimal from "decimal.js";
 import { calculateEventProfitability } from "@/lib/profitability/event-profitability";
 import { prisma } from "@/server/db/prisma";
 
+import { legacyCollection } from "@/lib/treasury/legacy-collection";
+
 const zero = () => new Decimal(0);
 
 type FinanceRow = {
@@ -26,7 +28,7 @@ async function readEvents() {
     where: { status: { not: "CANCELADO" } },
     include: {
       client: true,
-      legacyFinancialData: true,
+      legacyFinancialData: true, clientPayments: { where: { status: "ACTIVE" } },
       sourceQuoteVersion: true,
       sourceQuote: { include: { payments: { where: { status: PaymentStatus.ACTIVE }, orderBy: { paymentDate: "desc" } } } },
       staffAssignments: { where: { active: true }, include: { staff: true }, orderBy: { createdAt: "asc" } },
@@ -73,7 +75,8 @@ export async function operationalFinanceSummary() {
           ? { sale: legacy.saleArs, deposit: legacy.depositArs, cost: legacy.costArs, result: legacy.resultArs }
           : { sale: legacy.saleUsd, deposit: legacy.depositUsd, cost: legacy.costUsd, result: legacy.resultUsd };
         const total = new Decimal(values.sale ?? 0);
-        const collected = new Decimal(values.deposit ?? 0);
+        const balance = legacyCollection(legacy, event.clientPayments, currency);
+        const collected = balance.paid;
         const cost = new Decimal(values.cost ?? 0);
         const result = values.result === null ? total.minus(cost) : new Decimal(values.result);
         const hasFinancialData = !total.isZero() || !collected.isZero() || !cost.isZero() || !result.isZero()

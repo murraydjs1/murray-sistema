@@ -695,7 +695,7 @@ model ClientPayment {
   clientId String @db.Uuid
   eventId String? @db.Uuid
   quoteId String? @db.Uuid
-  quoteVersionId String @db.Uuid
+  quoteVersionId String? @db.Uuid
   accountId String? @db.Uuid
   amount Decimal @db.Decimal(18,2)
   currency Currency
@@ -716,7 +716,7 @@ model ClientPayment {
   client Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
   event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
   quote Quote? @relation(fields: [quoteId], references: [id], onDelete: Restrict)
-  quoteVersion QuoteVersion @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
+  quoteVersion QuoteVersion? @relation(fields: [quoteVersionId], references: [id], onDelete: Restrict)
   account FinancialAccount? @relation(fields: [accountId], references: [id], onDelete: Restrict)
   treasuryTransaction TreasuryTransaction? @relation("ClientPaymentTreasury", fields: [treasuryTransactionId], references: [id], onDelete: Restrict)
   createdBy User @relation("ClientPaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
