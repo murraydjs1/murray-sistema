@@ -45,7 +45,7 @@ export async function updateQuote(quoteId: string, formData: FormData) {
     const next = await tx.quote.update({ where: { id: quoteId }, data: { clientId: String(formData.get("clientId")), eventTypeId: String(formData.get("eventTypeId")), eventDate, guestCount: formData.get("guestCount") ? Number(formData.get("guestCount")) : null, venue: String(formData.get("venue") || "").trim(), address: nullable(formData, "address"), locality: nullable(formData, "locality"), googleMapsUrl: nullable(formData, "googleMapsUrl"), startTime: String(formData.get("startTime")), endTime: String(formData.get("endTime")), notes: nullable(formData, "notes") } });
     await audit(tx, { userId: actor.id, action: "UPDATE", entity: "Quote", entityId: quoteId, previousValue: quoteSnapshot(previous), newValue: quoteSnapshot(next), operationId: randomUUID() });
   });
-  revalidatePath(`/presupuestos/${quoteId}`); revalidatePath("/presupuestos"); revalidatePath("/dashboard");
+  revalidatePath(`/presupuestos/${quoteId}`); revalidatePath("/presupuestos"); revalidatePath("/dashboard");revalidatePath("/pendientes");
 }
 
 export async function saveQuoteVersion(quoteId: string, payload: string) {
@@ -104,7 +104,7 @@ export async function confirmQuote(quoteId: string, versionId: string, setupTime
     await audit(tx, { userId: actor.id, action: "CONFIRM_AND_CREATE_EVENT", entity: "Quote", entityId: quoteId, newValue: { versionId, eventId: created.id, eventNumber: number }, operationId });
     await audit(tx, { userId: actor.id, action: "CREATE", entity: "Event", entityId: created.id, newValue: { number, sourceQuoteId: quoteId, sourceQuoteVersionId: versionId }, operationId }); return created;
   }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-  revalidatePath("/dashboard"); revalidatePath("/agenda"); redirect(`/eventos/${event.id}`);
+  revalidatePath("/dashboard");revalidatePath("/pendientes"); revalidatePath("/agenda"); redirect(`/eventos/${event.id}`);
 }
 function nullable(data: FormData, key: string) { const value = String(data.get(key) || "").trim(); return value || null; }
 function quoteSnapshot(q: { clientId:string; eventTypeId:string; eventDate:Date; guestCount:number|null; venue:string; address:string|null; locality:string|null; googleMapsUrl:string|null; startTime:string; endTime:string; notes:string|null }) { return { clientId:q.clientId,eventTypeId:q.eventTypeId,eventDate:q.eventDate.toISOString().slice(0,10),guestCount:q.guestCount,venue:q.venue,address:q.address,locality:q.locality,googleMapsUrl:q.googleMapsUrl,startTime:q.startTime,endTime:q.endTime,notes:q.notes }; }

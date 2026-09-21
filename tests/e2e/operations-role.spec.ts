@@ -14,7 +14,7 @@ test("OPERACIONES accede al circuito operativo sin ver administración ni report
     await expect(page).not.toHaveURL(/sin-acceso/);
   }
 
-  for (const path of ["/usuarios", "/catalogo", "/dashboard", "/tesoreria", "/reportes/rentabilidad"]) {
+  for (const path of ["/usuarios", "/catalogo", "/dashboard", "/pendientes", "/tesoreria", "/reportes/rentabilidad"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/sin-acceso/);
   }

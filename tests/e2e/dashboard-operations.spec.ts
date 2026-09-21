@@ -5,7 +5,7 @@ import { previousWeek } from "../../src/lib/dashboard/operations";
 const db = new PrismaClient();
 test.afterAll(() => db.$disconnect());
 
-test("weekly home collects and pays without leaving the dashboard", async ({ page }) => {
+test("pending operations collects and pays while home keeps the dashboard", async ({ page }) => {
   const user = await db.user.findFirstOrThrow({ where: { role: "ADMIN" } });
   const eventType = await db.eventType.findFirstOrThrow();
   const staff = await db.staff.create({ data: { name: "Personal revisión semanal", defaultRole: "DJ", defaultEventRate: "70.20", currency: "ARS" } });
@@ -21,7 +21,12 @@ test("weekly home collects and pays without leaving the dashboard", async ({ pag
   await page.getByLabel("Contraseña").fill(process.env.SEED_DEMO_PASSWORD!);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL("**/dashboard");
-  await expect(page.getByRole("heading", { name: "Lo que queda por resolver" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Composición financiera · ARS" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Pendientes de la operación" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Ver pendientes", exact: true }).click();
+  await expect(page).toHaveURL(/\/pendientes$/);
+  await expect(page.getByRole("heading", { name: "Pendientes", exact: true })).toBeVisible();
   const card = page.locator(`#revision-semanal [data-event-id="${event.id}"]`);
   await expect(card).toContainText("Cliente revisión semanal");
   await card.getByText("Registrar cobro · ARS", { exact: true }).click();
@@ -41,15 +46,19 @@ test("weekly home collects and pays without leaving the dashboard", async ({ pag
   const storedPayment = await db.staffPayment.findFirstOrThrow({ where: { eventId: event.id } });
   expect(await db.auditLog.count({ where: { entity: "StaffPayment", entityId: storedPayment.id, action: "CREATE" } })).toBe(1);
   await page.goto("/dashboard?from=2030-01-01&to=2030-01-31");
+  await expect(page.locator("#revision-semanal")).toHaveCount(0);
+  await page.getByRole("link", { name: "Ver pendientes", exact: true }).click();
   await expect(page.locator(`#eventos-por-cobrar [data-event-id="${event.id}"]`)).toContainText("100,90");
   for (const width of [390, 1440]) {
     await page.setViewportSize({ width, height: 950 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-    await page.screenshot({ path: `test-results/dashboard-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `test-results/pendientes-${width}.png`, fullPage: true });
   }
   await page.locator('.operations-shortcuts a[href="#revision-semanal"]').focus();
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/#revision-semanal$/);
+  await expect(page).toHaveURL(/\/pendientes#revision-semanal$/);
+  await page.getByRole("link", { name: "Ver dashboard", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
 });
 
 test("financial admin records and voids Excel receipts with separate currency balances", async ({ page }) => {
@@ -61,6 +70,7 @@ test("financial admin records and voids Excel receipts with separate currency ba
   await page.getByLabel("Contraseña").fill(process.env.SEED_DEMO_PASSWORD!);
   await page.getByRole("button", { name: "Ingresar" }).click();
   await page.waitForURL("**/dashboard");
+  await page.getByRole("link", { name: "Ver pendientes", exact: true }).click();
   const card = page.locator(`#revision-semanal [data-event-id="${event.id}"]`);
   await expect(card).toContainText("80,20");
   await card.getByText("Registrar cobro · ARS", { exact: true }).focus();
@@ -116,7 +126,9 @@ test("financial admin records and voids Excel receipts with separate currency ba
     await page.goto(`/eventos/${event.id}`);
     await expect(page.getByRole("region", { name: "Cobros del evento importado" })).toHaveCount(0);
     if (email.startsWith("paddy")) { await expect(page).toHaveURL(/sin-acceso/); await expect(page.getByText("Transferencia saldo Excel")).toHaveCount(0); }
-    const response = await page.request.post("/dashboard", { headers: { "next-action": request.headers()["next-action"], "content-type": request.headers()["content-type"] }, data: request.postDataBuffer()! });
+    await page.goto("/pendientes");
+    await expect(page).toHaveURL(/sin-acceso/);
+    const response = await page.request.post("/pendientes", { headers: { "next-action": request.headers()["next-action"], "content-type": request.headers()["content-type"] }, data: request.postDataBuffer()! });
     expect(response.headers()["x-action-redirect"]).toContain("/sin-acceso");
     expect(await db.clientPayment.count({ where: { eventId: event.id } })).toBe(count);
   }

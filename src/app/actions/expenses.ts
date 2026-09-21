@@ -13,7 +13,7 @@ function text(formData: FormData, key: string) { return String(formData.get(key)
 function nullable(formData: FormData, key: string) { return text(formData, key) || null; }
 function refresh(eventId?: string) {
   if (eventId) revalidatePath(`/eventos/${eventId}`);
-  revalidatePath("/gastos"); revalidatePath("/reportes/rentabilidad"); revalidatePath("/dashboard");
+  revalidatePath("/gastos"); revalidatePath("/reportes/rentabilidad"); revalidatePath("/dashboard");revalidatePath("/pendientes");
 }
 function expenseSnapshot(value: { eventId:string; categoryId:string; quoteItemId:string|null; description:string; amount:unknown; currency:Currency; expenseDate:Date; paidByStaffId:string|null; paymentMethod:ExpensePaymentMethod|null; receiptUrl:string|null; notes:string|null; status:string }) {
   return { ...value, amount:String(value.amount), expenseDate:value.expenseDate.toISOString().slice(0,10) };

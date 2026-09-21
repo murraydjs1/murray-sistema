@@ -1,5 +1,4 @@
 import { legacyCollection } from "@/lib/treasury/legacy-collection";
-import { OperationsOverview } from "@/components/dashboard/operations-overview";
 import { Currency, EventStatus, Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import { ArrowRight, CalendarDays, CircleDollarSign, Clock3, TriangleAlert } from "lucide-react";
@@ -92,11 +91,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return <>
     <div className="topbar dashboard-heading">
-      <div><div className="eyebrow">Visión general</div><h1>Lo que queda por resolver</h1><p className="muted">Tu revisión semanal y los pendientes de eventos pasados, a mano.</p></div>
-      <div className="row"><Link className="btn btn-secondary" href="/presupuestos/nuevo">Nuevo presupuesto</Link><Link className="btn btn-primary" href="/eventos/nuevo">+ Nuevo evento</Link></div>
+      <div><div className="eyebrow">Visión general</div><h1>Dashboard</h1><p className="muted">Indicadores, resultados y próximos eventos de Murray.</p></div>
+      <div className="row"><Link className="btn btn-secondary" href="/pendientes">Ver pendientes</Link><Link className="btn btn-secondary" href="/presupuestos/nuevo">Nuevo presupuesto</Link><Link className="btn btn-primary" href="/eventos/nuevo">+ Nuevo evento</Link></div>
     </div>
-    <OperationsOverview />
-    <div className="section-head"><div><h2>Resumen del período</h2><p className="muted">Los filtros del resumen no ocultan pendientes de otras fechas.</p></div></div>
+    <div className="section-head"><div><h2>Resumen del período</h2><p className="muted">Consultá la actividad y los importes del período seleccionado.</p></div></div>
     <details className="filters dashboard-filters"><summary>Período y filtros</summary><form method="get" className="filter-grid">
       <div className="field"><label htmlFor="filter-from">Desde</label><input id="filter-from" name="from" type="date" defaultValue={from} /></div>
       <div className="field"><label htmlFor="filter-to">Hasta</label><input id="filter-to" name="to" type="date" defaultValue={to} /></div>

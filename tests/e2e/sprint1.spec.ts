@@ -11,7 +11,7 @@ test.afterAll(async()=>db.$disconnect());
 test("Sprint 1 completo con PostgreSQL real",async({page})=>{
   await login(page,"miguel@murraydjs.local");
   await expect(page).toHaveURL(/dashboard/);
-  await expect(page.getByRole("heading",{name:"Lo que queda por resolver"})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Dashboard",exact:true})).toBeVisible();
 
   await page.goto("/clientes/nuevo");
   await page.getByLabel("Nombre / razón social *").fill("Cliente Prueba Murray");

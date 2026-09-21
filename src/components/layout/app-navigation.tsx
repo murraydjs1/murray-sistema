@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BarChart3, CalendarDays, Contact, FileText, Headphones, Landmark, LayoutDashboard,
+  BarChart3, CalendarDays, ClipboardList, Contact, FileText, Headphones, Landmark, LayoutDashboard,
   LogOut, Menu, PackagePlus, ReceiptText, Upload, UserRoundCog, Users,
 } from "lucide-react";
 
@@ -17,6 +17,7 @@ const groups: NavGroup[] = [
     { href: "/agenda", label: "Agenda", icon: CalendarDays },
   ] },
   { label: "Operación", items: [
+    { href: "/pendientes", label: "Pendientes", icon: ClipboardList },
     { href: "/eventos", label: "Eventos", icon: CalendarDays },
     { href: "/personal", label: "Personal", icon: UserRoundCog },
   ] },
@@ -58,12 +59,13 @@ export function AppNavigation({ role, name, logoutAction }: { role: Role; name: 
     ? [{ label: "Operación", items: [{ href: "/staff", label: "Mis eventos", icon: CalendarDays }] }]
     : (operator ? groups.filter((group) => ["Operación", "Comercial"].includes(group.label)).map((group) => ({
       ...group,
-      items: group.items.filter((item) => item.href !== "/catalogo"),
+      items: group.items.filter((item) => !["/catalogo", "/pendientes"].includes(item.href)),
     })) : groups).map((group) => group.label === "Configuración" && role === "ADMIN"
       ? { ...group, items: [...group.items, { href: "/usuarios", label: "Usuarios", icon: Users }] }
       : group);
   const allItems = visibleGroups.flatMap((group) => group.items);
-  const primary = staff ? allItems : allItems.filter((item) => ["/dashboard", "/agenda", "/eventos", "/clientes"].includes(item.href));
+  const primaryPaths = operator ? ["/agenda", "/eventos", "/clientes"] : ["/dashboard", "/pendientes", "/agenda", "/eventos"];
+  const primary = staff ? allItems : primaryPaths.flatMap(path => allItems.filter(item => item.href === path));
   const more = staff ? [] : allItems.filter((item) => !primary.some((primaryItem) => primaryItem.href === item.href));
 
   return <>

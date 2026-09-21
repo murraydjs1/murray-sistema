@@ -3,6 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { ClientType, Currency, EventStatus, QuoteStatus } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { suggestSetupTime } from "@/lib/dates/times";
@@ -62,6 +63,8 @@ export async function createEvent(formData: FormData) {
     await audit(tx, { userId: actor.id, action: "CREATE", entity: "Event", entityId: created.id, newValue: { number: eventNumber, sourceQuoteId: quote.id, sourceQuoteVersionId: version.id, managerStaffId: input.managerStaffId || null, status: input.status }, operationId });
     return created;
   });
+  revalidatePath("/dashboard");
+  revalidatePath("/pendientes");
   redirect(`/eventos/${event.id}`);
 }
 

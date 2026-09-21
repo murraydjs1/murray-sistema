@@ -6,6 +6,7 @@ import { ChevronRight, Home } from "lucide-react";
 
 const labels: Record<string, { section: string; title: string }> = {
   "/dashboard": { section: "Resumen", title: "Inicio" },
+  "/pendientes": { section: "Operación", title: "Pendientes" },
   "/agenda": { section: "Operación", title: "Agenda" },
   "/eventos": { section: "Operación", title: "Eventos" },
   "/clientes": { section: "Comercial", title: "Clientes" },
