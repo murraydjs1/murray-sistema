@@ -1,0 +1,23 @@
+/* Editorial chapters extending the existing public experience. */
+.party-prelude,.party-questions{position:relative;z-index:3;padding:clamp(70px,9vw,140px) max(5vw,24px);color:inherit}
+.party-prelude{display:grid;grid-template-columns:1fr 1fr;gap:6vw;align-items:center}
+.party-prelude-portrait{position:relative;min-height:640px;height:75svh;overflow:hidden}
+.party-prelude-portrait img{object-fit:cover;object-position:50% 40%}
+.party-prelude-copy h2,.party-questions h2{margin:28px 0 36px;font-size:clamp(48px,6vw,90px);line-height:.88;letter-spacing:-.065em;text-transform:uppercase}
+.party-prelude-copy h2 em,.party-questions h2 em{font-style:normal;color:var(--party-red)}
+.party-prelude-copy>p{max-width:40ch;line-height:1.6;opacity:.75}
+.party-prelude ol{list-style:none;margin:36px 0;padding:0}
+.party-prelude li{display:grid;grid-template-columns:35px 1fr;gap:12px;padding:20px 0;border-top:1px solid currentColor}
+.party-prelude li>span{color:var(--party-red);font-size:11px;font-weight:800}
+.party-prelude h3{margin:0 0 8px;font-size:22px;letter-spacing:-.03em}
+.party-prelude li p{margin:0;max-width:43ch;font-size:14px;line-height:1.6;opacity:.7}
+.party-prelude a{display:inline-flex;align-items:center;min-height:48px;font-weight:800;text-decoration:underline;text-underline-offset:8px}
+.party-questions{display:grid;grid-template-columns:1fr 1fr;gap:6vw;border-top:1px solid currentColor}
+.party-questions details{border-bottom:1px solid currentColor}
+.party-questions summary{display:flex;justify-content:space-between;align-items:center;gap:20px;min-height:76px;padding:18px 0;cursor:pointer;font-size:18px;font-weight:700;list-style:none}
+.party-questions summary::-webkit-details-marker{display:none}
+.party-questions summary::after{content:'+';color:var(--party-red);font-size:28px;font-weight:400}
+.party-questions details[open] summary::after{content:'−'}
+.party-questions details p{margin:0;padding:0 32px 25px 0;line-height:1.65;opacity:.75;font-size:15px}
+.party-prelude a:focus-visible,.party-questions summary:focus-visible{outline:2px solid var(--party-red);outline-offset:6px}
+@media(max-width:800px){.party-prelude,.party-questions{grid-template-columns:1fr;gap:32px;padding:65px 24px}.party-prelude-portrait{height:60svh;min-height:340px;max-height:560px}.party-prelude-copy h2,.party-questions h2{font-size:clamp(44px,12vw,76px)}.party-questions{padding-bottom:110px}.party-questions h2{margin-bottom:0}.party-questions summary{font-size:17px}}

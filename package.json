@@ -20,7 +20,8 @@
     "db:data-migrate": "tsx scripts/data-migrate.ts",
     "db:release": "prisma generate && pnpm db:preflight && prisma migrate deploy && pnpm db:data-migrate",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
-    "db:local": "tsx scripts/dev-postgres.ts"
+    "db:local": "tsx scripts/dev-postgres.ts",
+    "build:public": "pnpm lint && node scripts/build-public-site.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.14.0",
