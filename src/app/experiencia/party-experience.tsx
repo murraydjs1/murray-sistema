@@ -20,7 +20,7 @@ const djs = [
 ] as const;
 
 const eventTypes = [
-  { title: "Cumpleaños y aniversarios", description: "Fiestas de 40, 50, 60 y más, donde distintas generaciones terminan compartiendo la misma pista.", featured: true },
+  { title: "Cumpleaños y aniversarios", description: "Fiestas de todas las edades: 40, 50, 60, 70, 80, 90… ¡y, si te animás, 100! Distintas generaciones compartiendo la misma pista.", featured: true },
   { title: "Casamientos", description: "Desde la recepción hasta el último tema. Construimos la música de cada momento junto a los novios.", featured: false },
   { title: "Eventos corporativos", description: "Celebraciones, cierres de año y encuentros donde la música acompaña la identidad y la energía del evento.", featured: false },
   { title: "Fiestas privadas", description: "Escuchamos la idea, conocemos a los invitados y diseñamos una noche con un clima completamente propio.", featured: false },
@@ -167,7 +167,7 @@ export function PartyExperience() {
         <header>
           <span className="party-kicker">Lo que hacemos</span>
           <h2 id="party-events-title">Una pista.<br /><em>Muchas formas</em><br />de celebrarla.</h2>
-          <p>Cada evento tiene su propia energía. Nosotros encontramos la música que la convierte en una noche para recordar.</p>
+          <p>Cada evento tiene su propia energía. Junto con Party Express llevamos la fiesta a donde quieras.</p>
         </header>
         <div className="party-events-list">
           {eventTypes.map((eventType, index) => (
@@ -184,6 +184,24 @@ export function PartyExperience() {
           <span>¿Qué estás organizando?</span>
           <a href={whatsappUrl} target="_blank" rel="noreferrer">Contanos tu idea <b>↗</b></a>
         </div>
+      </section>
+
+      <section className="party-venues" id="salones" aria-labelledby="party-venues-title" data-party-reveal>
+        <header>
+          <span className="party-kicker">Dónde nos encontramos</span>
+          <h2 id="party-venues-title">Encontranos en<br /><em>estos salones.</em></h2>
+        </header>
+        <ul>
+          {[
+            "Estancia Santa Lucia",
+            "Espacio Mendoza",
+            "Finca Madero",
+            "Quinta El Tata",
+            "Las Cortaderas",
+            "Estancia La Lupita",
+            "La Posada Multiespacios",
+          ].map((venue) => <li key={venue}>{venue}</li>)}
+        </ul>
       </section>
 
       <section className="party-prelude" aria-labelledby="party-prelude-title" data-party-reveal>
